@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Donation extends Model
 {
@@ -13,19 +14,19 @@ class Donation extends Model
         'donor_id',
         'blood_request_id',
         'donation_date',
-        'status'
+        'quantity'
     ];
 
     protected $casts = [
         'donation_date' => 'date',
     ];
 
-    public function donor()
+    public function donor(): BelongsTo
     {
         return $this->belongsTo(Donor::class);
     }
 
-    public function bloodRequest()
+    public function bloodRequest(): BelongsTo
     {
         return $this->belongsTo(BloodRequest::class);
     }
