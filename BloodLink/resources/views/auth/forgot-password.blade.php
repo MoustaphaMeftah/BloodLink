@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - BloodLink</title>
+    <title>Forgot Password - BloodLink</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="{{ asset('css/style.css') }}" rel="stylesheet">
@@ -18,8 +18,8 @@
             <div class="mx-auto bg-danger rounded-circle d-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
                 <i class="fas fa-droplet text-white" style="font-size: 28px;"></i>
             </div>
-            <h3 class="mt-3 fw-bold">Welcome Back</h3>
-            <p class="text-muted small">Sign in to your BloodLink account</p>
+            <h3 class="mt-3 fw-bold">Forgot Password</h3>
+            <p class="text-muted small">Enter your email to receive a reset link</p>
         </div>
 
         @if (session('success'))
@@ -36,45 +36,22 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('login.post') }}">
+        <form method="POST" action="{{ route('password.email') }}">
             @csrf
-
             <div class="mb-3">
                 <label for="email" class="form-label fw-medium">Email</label>
                 <div class="input-group">
                     <span class="input-group-text bg-white"><i class="fas fa-envelope text-danger"></i></span>
-                    <input type="email" name="email" id="email" class="form-control" placeholder="your@email.com" value="{{ old('email') }}" required>
+                    <input type="email" name="email" id="email" class="form-control" placeholder="your@email.com" required>
                 </div>
             </div>
-
-            <div class="mb-3">
-                <label for="password" class="form-label fw-medium">Password</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-white"><i class="fas fa-lock text-danger"></i></span>
-                    <input type="password" name="password" id="password" class="form-control" placeholder="Enter your password" required>
-                </div>
-            </div>
-
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div class="form-check">
-                    <input type="checkbox" name="remember" class="form-check-input" id="remember">
-                    <label class="form-check-label small" for="remember">Remember me</label>
-                </div>
-                <a href="{{ route('password.request') }}" class="small text-danger text-decoration-none fw-medium">
-                    Forgot password?
-                </a>
-            </div>
-
-            <button type="submit" class="btn btn-danger w-100 py-2 fw-bold mb-3" style="border-radius: 8px;">
-                <i class="fas fa-sign-in-alt me-1"></i> Login
+            <button type="submit" class="btn btn-danger w-100 py-2 fw-bold" style="border-radius: 8px;">
+                <i class="fas fa-paper-plane me-1"></i> Send Reset Link
             </button>
         </form>
 
-        <div class="text-center">
-            <p class="small text-muted mb-0">
-                Don't have an account?
-                <a href="{{ route('register') }}" class="text-danger text-decoration-none fw-medium">Create one</a>
-            </p>
+        <div class="text-center mt-3">
+            <a href="{{ route('login') }}" class="text-danger text-decoration-none fw-medium">Back to Login</a>
         </div>
     </div>
 </div>

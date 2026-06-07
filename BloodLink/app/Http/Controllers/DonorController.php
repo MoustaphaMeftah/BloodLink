@@ -4,100 +4,145 @@ namespace App\Http\Controllers;
 
 use App\Models\Donor;
 use App\Models\BloodRequest;
+use App\Models\DonorResponse;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 class DonorController extends Controller
 {
-    /**
-     * Get all donors with filtering
-     */
+    use ApiResponse;
+
+    // ==================== WEB METHODS ====================
+
+    public function dashboard()
+    {
+        $donor = Auth::user()->donor;
+        return view('donor.dashboard', compact('donor'));
+    }
+
+    public function getPendingWebRequests()
+    {
+        $donor = Auth::user()->donor;
+        $bloodType = $donor->blood_type;
+
+        $requests = BloodRequest::where('status', 'open')
+            ->where('blood_type', $bloodType)
+            ->with('hospital')
+            ->orderByDesc('created_at')
+            ->paginate(10);
+
+        return view('donor.requests', compact('requests'));
+    }
+
+    public function respondToWebRequest(Request $request, int $requestId)
+    {
+        $validator = Validator::make($request->all(), [
+            'accepted' => 'required|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator);
+        }
+
+        try {
+            $donor = Auth::user()->donor;
+            $bloodRequest = BloodRequest::findOrFail($requestId);
+
+            $bloodRequest->donors()->attach($donor->id, [
+                'status' => $request->accepted ? 'accepted' : 'rejected',
+            ]);
+
+            DonorResponse::create([
+                'donor_id' => $donor->id,
+                'blood_request_id' => $bloodRequest->id,
+                'status' => $request->accepted ? 'accepted' : 'rejected',
+                'response_date' => now(),
+            ]);
+
+            return back()->with('success', $request->accepted ? 'Donation accepted' : 'Request declined');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function getWebDonationHistory()
+    {
+        $donor = Auth::user()->donor;
+        $donations = $donor->donations()
+            ->with('bloodRequest.hospital')
+            ->orderByDesc('created_at')
+            ->paginate(15);
+
+        return view('donor.history', compact('donations'));
+    }
+
+    // ==================== API METHODS ====================
+
     public function index(Request $request)
     {
         try {
             $query = Donor::with('user');
 
-            // Filter by blood type
             if ($request->blood_type) {
                 $query->where('blood_type', $request->blood_type);
             }
 
-            // Filter by city
             if ($request->city) {
                 $query->where('city', 'like', '%' . $request->city . '%');
             }
 
-            // Filter by availability
             if ($request->availability !== null) {
                 $query->where('availability', $request->availability);
             }
 
             $donors = $query->paginate($request->per_page ?? 15);
 
-            return response()->json(['success' => true, 'data' => $donors], 200);
-
+            return $this->successResponse($donors, 'Donors retrieved successfully');
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return $this->errorResponse($e->getMessage(), 500);
         }
     }
 
-    /**
-     * Get donor by ID
-     */
     public function show($id)
     {
         try {
-            $donor = Donor::with('user', 'donations', 'requests')->findOrFail($id);
-
-            return response()->json(['success' => true, 'data' => $donor], 200);
-
+            $donor = Donor::with('user', 'donations', 'bloodRequests')->findOrFail($id);
+            return $this->successResponse($donor, 'Donor retrieved successfully');
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Donor not found'], 404);
+            return $this->notFoundResponse('Donor not found');
         }
     }
 
-    /**
-     * Update donor profile
-     */
     public function update(Request $request, $id)
     {
-        $validator = Validator::make($request->all(), [
-            'blood_type' => 'nullable|in:O+,O-,A+,A-,B+,B-,AB+,AB-',
-            'city' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'availability' => 'nullable|boolean',
-            'medical_history' => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
-
         try {
             $donor = Donor::findOrFail($id);
 
+            $validator = Validator::make($request->all(), [
+                'blood_type' => 'nullable|in:O+,O-,A+,A-,B+,B-,AB+,AB-',
+                'city' => 'nullable|string|max:255',
+                'availability' => 'nullable|boolean',
+                'medical_history' => 'nullable|string',
+                'latitude' => 'nullable|numeric|between:-90,90',
+                'longitude' => 'nullable|numeric|between:-180,180',
+            ]);
+
+            if ($validator->fails()) {
+                return $this->validationErrorResponse($validator->errors());
+            }
+
             $donor->update($request->only([
-                'blood_type',
-                'city',
-                'phone',
-                'availability',
-                'medical_history'
+                'blood_type', 'city', 'availability', 'medical_history', 'latitude', 'longitude'
             ]));
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Donor profile updated successfully',
-                'data' => $donor
-            ], 200);
-
+            return $this->successResponse($donor, 'Donor profile updated successfully');
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return $this->errorResponse($e->getMessage(), 500);
         }
     }
 
-    /**
-     * Update donor availability
-     */
     public function updateAvailability(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
@@ -105,72 +150,56 @@ class DonorController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+            return $this->validationErrorResponse($validator->errors());
         }
 
         try {
             $donor = Donor::findOrFail($id);
             $donor->update(['availability' => $request->availability]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Availability updated',
-                'data' => $donor
-            ], 200);
-
+            return $this->successResponse($donor, 'Availability updated');
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return $this->errorResponse($e->getMessage(), 500);
         }
     }
 
-    /**
-     * Search donors by criteria
-     */
     public function search(Request $request)
     {
         try {
             $query = Donor::with('user');
 
-            // Blood type filter
             if ($request->blood_type) {
                 $query->where('blood_type', $request->blood_type);
             }
 
-            // City filter
             if ($request->city) {
                 $query->where('city', 'like', '%' . $request->city . '%');
             }
 
-            // Availability filter
             if ($request->availability !== null) {
                 $query->where('availability', $request->availability);
             }
 
-            // Distance filter (if geolocation available)
-            if ($request->latitude && $request->longitude) {
-                // Using Haversine formula for distance calculation
-                $query->selectRaw(
-                    '*, (6371 * acos(cos(radians(?)) * cos(radians(latitude)) * 
-                    cos(radians(longitude) - radians(?)) + sin(radians(?)) * 
-                    sin(radians(latitude)))) AS distance',
-                    [$request->latitude, $request->longitude, $request->latitude]
-                )
-                ->havingRaw('distance < ?', [$request->distance ?? 25])
-                ->orderBy('distance');
-            }
-
             $donors = $query->get();
 
-            return response()->json(['success' => true, 'data' => $donors], 200);
+            if ($request->latitude && $request->longitude) {
+                $lat = (float) $request->latitude;
+                $lon = (float) $request->longitude;
+                $maxDistance = (float) ($request->distance ?? 25);
 
+                $donors = $donors->filter(function ($donor) use ($lat, $lon, $maxDistance) {
+                    if ($donor->latitude === null || $donor->longitude === null) {
+                        return false;
+                    }
+                    $donor->distance = $this->haversineDistance($lat, $lon, $donor->latitude, $donor->longitude);
+                    return $donor->distance < $maxDistance;
+                })->sortBy('distance')->values();
+            }
+            return $this->successResponse($donors, 'Search results');
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return $this->errorResponse($e->getMessage(), 500);
         }
     }
 
-    /**
-     * Get nearby donors
-     */
     public function getNearbyDonors(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -180,60 +209,66 @@ class DonorController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+            return $this->validationErrorResponse($validator->errors());
         }
 
         try {
-            $distance = $request->distance ?? 25; // Default 25 km
+            $distance = $request->distance ?? 25;
+            $lat = (float) $request->latitude;
+            $lon = (float) $request->longitude;
 
-            $donors = Donor::selectRaw(
-                '*, (6371 * acos(cos(radians(?)) * cos(radians(latitude)) * 
-                cos(radians(longitude) - radians(?)) + sin(radians(?)) * 
-                sin(radians(latitude)))) AS distance',
-                [$request->latitude, $request->longitude, $request->latitude]
-            )
-            ->where('availability', true)
-            ->havingRaw('distance < ?', [$distance])
-            ->orderBy('distance')
-            ->with('user')
-            ->get();
+            $donors = Donor::where('availability', true)
+                ->with('user')
+                ->get()
+                ->filter(function ($donor) use ($lat, $lon, $distance) {
+                    if ($donor->latitude === null || $donor->longitude === null) {
+                        return false;
+                    }
+                    $donor->distance = $this->haversineDistance($lat, $lon, $donor->latitude, $donor->longitude);
+                    return $donor->distance < $distance;
+                })
+                ->sortBy('distance')
+                ->values();
 
-            return response()->json(['success' => true, 'data' => $donors], 200);
-
+            return $this->successResponse($donors, 'Nearby donors');
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return $this->errorResponse($e->getMessage(), 500);
         }
     }
 
-    /**
-     * Get donation history
-     */
+    private function haversineDistance(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $earthRadius = 6371;
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+            cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+            sin($dLon / 2) * sin($dLon / 2);
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        return $earthRadius * $c;
+    }
+
     public function getDonationHistory($donorId)
     {
         try {
             $donor = Donor::findOrFail($donorId);
             $donations = $donor->donations()
-                ->with('request')
+                ->with('bloodRequest')
                 ->orderByDesc('created_at')
                 ->get();
 
-            return response()->json(['success' => true, 'data' => $donations], 200);
-
+            return $this->successResponse($donations, 'Donation history');
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return $this->errorResponse($e->getMessage(), 500);
         }
     }
 
-    /**
-     * Get pending requests for donor
-     */
     public function getPendingRequests($donorId)
     {
         try {
             $donor = Donor::findOrFail($donorId);
             $bloodType = $donor->blood_type;
 
-            // Get requests matching donor's blood type
             $requests = BloodRequest::where('status', 'open')
                 ->where('blood_type', $bloodType)
                 ->with('hospital')
@@ -241,66 +276,51 @@ class DonorController extends Controller
                 ->limit(10)
                 ->get();
 
-            return response()->json(['success' => true, 'data' => $requests], 200);
-
+            return $this->successResponse($requests, 'Pending requests');
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return $this->errorResponse($e->getMessage(), 500);
         }
     }
 
-    /**
-     * Respond to blood request
-     */
     public function respondToRequest(Request $request, $donorId, $requestId)
     {
         $validator = Validator::make($request->all(), [
-            'accepted' => 'required|boolean',
+            'status' => 'required|in:accepted,rejected',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+            return $this->validationErrorResponse($validator->errors());
         }
 
         try {
             $donor = Donor::findOrFail($donorId);
             $bloodRequest = BloodRequest::findOrFail($requestId);
 
-            // Record response
             $bloodRequest->donors()->attach($donorId, [
-                'response' => $request->accepted ? 'accepted' : 'declined',
-                'responded_at' => now()
+                'status' => $request->status,
             ]);
 
-            // If accepted, send notification to hospital
-            if ($request->accepted) {
-                // TODO: Send notification to hospital
-                // Notification::route('mail', $bloodRequest->hospital->email)
-                //     ->notify(new DonorAcceptedNotification($donor, $bloodRequest));
-            }
+            DonorResponse::create([
+                'donor_id' => $donor->id,
+                'blood_request_id' => $bloodRequest->id,
+                'status' => $request->status,
+                'response_date' => now(),
+            ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => $request->accepted ? 'Donation accepted' : 'Request declined'
-            ], 200);
-
+            return $this->successResponse(null, $request->status === 'accepted' ? 'Donation accepted' : 'Request declined');
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return $this->errorResponse($e->getMessage(), 500);
         }
     }
 
-    /**
-     * Delete donor
-     */
     public function destroy($id)
     {
         try {
             $donor = Donor::findOrFail($id);
             $donor->delete();
-
-            return response()->json(['success' => true, 'message' => 'Donor deleted successfully'], 200);
-
+            return $this->successResponse(null, 'Donor deleted successfully');
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return $this->errorResponse($e->getMessage(), 500);
         }
     }
 }

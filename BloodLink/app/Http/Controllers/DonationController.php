@@ -2,23 +2,56 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Donor;
 use App\Models\Donation;
+use App\Traits\ApiResponse;
+use App\Services\DonationService;
+use App\Http\Requests\DonationStoreRequest;
 use Illuminate\Http\Request;
 
 class DonationController extends Controller
 {
-    public function store(Request $request)
-    {
-        $donation = Donation::create($request->all());
+    use ApiResponse;
 
-        return response()->json([
-            'message' => 'Donation recorded',
-            'data' => $donation
-        ]);
+    protected DonationService $donationService;
+
+    public function __construct(DonationService $donationService)
+    {
+        $this->donationService = $donationService;
     }
 
-    public function history($donor_id)
+    public function store(DonationStoreRequest $request)
     {
-        return Donation::where('donor_id', $donor_id)->get();
+        try {
+            $donation = $this->donationService->recordDonation($request->validated());
+
+            return $this->createdResponse($donation, 'Donation recorded successfully');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 400);
+        }
+    }
+
+    public function history(int $donorId)
+    {
+        try {
+            $donor = Donor::findOrFail($donorId);
+            $donations = $this->donationService->getDonationHistory($donor);
+
+            return $this->successResponse($donations, 'Donation history retrieved');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 500);
+        }
+    }
+
+    public function checkEligibility(int $donorId)
+    {
+        try {
+            $donor = Donor::findOrFail($donorId);
+            $eligibility = $this->donationService->canDonate($donor);
+
+            return $this->successResponse($eligibility, 'Donation eligibility check');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 500);
+        }
     }
 }

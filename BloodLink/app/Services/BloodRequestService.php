@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Models\BloodRequest;
 use App\Models\Donor;
+use App\Notifications\BloodRequestNotification;
 use App\Traits\BloodCompatibility;
+use Illuminate\Support\Facades\Notification;
 
 class BloodRequestService
 {
@@ -33,7 +35,7 @@ class BloodRequestService
             $notified++;
 
             if ($donor->user) {
-                \Notification::send($donor->user, new \App\Notifications\BloodRequestNotification($bloodRequest));
+                Notification::send($donor->user, new BloodRequestNotification($bloodRequest));
             }
         }
 

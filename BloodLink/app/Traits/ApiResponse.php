@@ -44,7 +44,7 @@ trait ApiResponse
         return $this->errorResponse($message, 403);
     }
 
-    protected function validationErrorResponse(array $errors): JsonResponse
+    protected function validationErrorResponse(array|\Illuminate\Support\MessageBag $errors): JsonResponse
     {
         return response()->json([
             'success' => false,

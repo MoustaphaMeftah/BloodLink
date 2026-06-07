@@ -15,54 +15,11 @@
 
 <body>
 
-<!-- NAVBAR -->
-<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top">
-    <div class="container">
-
-        <a class="navbar-brand fw-bold" href="{{ url('/') }}">
-            <i class="fas fa-droplet text-danger"></i> BloodLink
-        </a>
-
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="nav">
-
-            <ul class="navbar-nav ms-auto">
-
-                <li class="nav-item">
-                    <a class="nav-link" href="#features">Features</a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="#how">How it works</a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="#about">About</a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('login') }}">Login</a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="btn btn-danger text-white ms-2" href="{{ route('register') }}">
-                        Register
-                    </a>
-                </li>
-
-            </ul>
-
-        </div>
-
-    </div>
-</nav>
+@include('partials.navbar')
 
 <!-- HERO SECTION -->
 <section class="text-white d-flex align-items-center"
-    style="min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    style="min-height: 100vh; background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%);">
 
     <div class="container text-center">
 
@@ -74,12 +31,16 @@
 
         <div class="mt-4">
 
-            <a href="{{ route('register') }}?role=donor" class="btn btn-light btn-lg me-2">
-                Become Donor
+            <a href="{{ route('login') }}" class="btn btn-outline-light btn-lg me-2 fw-bold" style="border-radius: 8px;">
+                <i class="fas fa-sign-in-alt me-1"></i> Login
             </a>
 
-            <a href="{{ route('register') }}?role=hospital" class="btn btn-outline-light btn-lg">
-                Register Hospital
+            <a href="{{ route('register') }}?role=donor" class="btn btn-light btn-lg me-2 fw-bold" style="border-radius: 8px;">
+                <i class="fas fa-heart me-1"></i> Become a Donor
+            </a>
+
+            <a href="{{ route('register') }}?role=hospital" class="btn btn-outline-light btn-lg fw-bold" style="border-radius: 8px;">
+                <i class="fas fa-hospital me-1"></i> Register Hospital
             </a>
 
         </div>

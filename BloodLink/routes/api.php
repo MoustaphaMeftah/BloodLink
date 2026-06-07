@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DonorController;
+use App\Http\Controllers\DonationController;
 use App\Http\Controllers\BloodRequestController;
 
 /*
@@ -17,6 +18,10 @@ use App\Http\Controllers\BloodRequestController;
 // 🟢 AUTH (public)
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+
+// Password reset (public)
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 /*
 |--------------------------------------------------------------------------
@@ -67,4 +72,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/requests/{id}/donors', [BloodRequestController::class, 'compatibleDonors']);
     Route::put('/requests/{id}/urgent', [BloodRequestController::class, 'markUrgent']);
     Route::put('/requests/{id}/complete', [BloodRequestController::class, 'markCompleted']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | 🩸 DONATIONS
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post('/donations', [DonationController::class, 'store']);
+    Route::get('/donors/{donorId}/donations', [DonationController::class, 'history']);
+    Route::get('/donors/{donorId}/eligibility', [DonationController::class, 'checkEligibility']);
 });

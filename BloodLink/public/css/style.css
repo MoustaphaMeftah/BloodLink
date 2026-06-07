@@ -4,8 +4,8 @@
 
 /* Root Variables */
 :root {
-    --primary-color: #667eea;
-    --secondary-color: #764ba2;
+    --primary-color: #dc3545;
+    --secondary-color: #a71d2a;
     --danger-color: #dc3545;
     --success-color: #28a745;
     --warning-color: #ffc107;
@@ -42,12 +42,12 @@ html, body {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #667eea;
+    background: #dc3545;
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #764ba2;
+    background: #a71d2a;
 }
 
 /* Typography */
@@ -73,7 +73,7 @@ a {
 
 .navbar-brand {
     font-size: 1.5rem;
-    color: var(--primary-color) !important;
+    color: var(--danger-color) !important;
     letter-spacing: 0.5px;
 }
 
@@ -143,7 +143,7 @@ a {
 .section-title {
     font-size: 2.5rem;
     font-weight: 700;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -169,7 +169,7 @@ a {
 .feature-icon {
     width: 70px;
     height: 70px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -191,7 +191,7 @@ a {
 
 /* Blood Types Grid */
 .blood-type-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%);
     color: white;
     border-radius: 12px;
     padding: 2rem;
@@ -230,7 +230,7 @@ a {
     top: 0;
     bottom: 0;
     width: 2px;
-    background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(180deg, #dc3545 0%, #a71d2a 100%);
 }
 
 .timeline-item {
@@ -245,7 +245,7 @@ a {
     top: 0;
     width: 60px;
     height: 60px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -260,13 +260,13 @@ a {
     background: white;
     border-radius: 8px;
     padding: 1.5rem;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid #dc3545;
     box-shadow: var(--shadow-sm);
 }
 
 .timeline-content h5 {
     margin-bottom: 0.5rem;
-    color: #667eea;
+    color: #dc3545;
 }
 
 .timeline-content p {
@@ -295,22 +295,21 @@ a {
     border-radius: 8px;
     font-weight: 600;
     transition: all 0.3s ease;
-    text-transform: uppercase;
-    font-size: 0.85rem;
-    letter-spacing: 0.5px;
+    font-size: 0.95rem;
+    letter-spacing: 0.3px;
     border: none;
     padding: 0.6rem 1.2rem;
 }
 
 .btn-danger {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%);
     color: white !important;
     border: none;
 }
 
 .btn-danger:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 8px 16px rgba(220, 53, 69, 0.3);
 }
 
 .btn-lg {
@@ -339,8 +338,8 @@ a {
 
 .form-control:focus,
 .form-select:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
 }
 
 .form-label {
@@ -388,19 +387,19 @@ a {
 }
 
 .role-card:hover {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.1);
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.1);
 }
 
 .role-card.active {
-    border-color: #667eea;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+    border-color: #dc3545;
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.05) 0%, rgba(167, 29, 42, 0.05) 100%);
     box-shadow: var(--shadow-md);
 }
 
 .role-card i {
     font-size: 3rem;
-    color: #667eea;
+    color: #dc3545;
     margin-bottom: 1rem;
 }
 
@@ -487,7 +486,7 @@ a {
 }
 
 .footer a:hover {
-    color: #667eea;
+    color: #dc3545;
 }
 
 .footer hr {
@@ -511,7 +510,7 @@ a {
 
 /* Stats Section */
 .stats {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%);
     padding: 4rem 0;
     text-align: center;
 }
@@ -528,7 +527,7 @@ a {
 
 /* CTA Section */
 .cta {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%);
     color: white;
     padding: 4rem 0;
     border-radius: 12px;

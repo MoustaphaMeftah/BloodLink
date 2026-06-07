@@ -2,15 +2,17 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasFactory, Notifiable;
+    use \Illuminate\Auth\MustVerifyEmail, HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'name',
@@ -19,8 +21,10 @@ class User extends Authenticatable
         'role',
         'phone',
         'city',
+        'email_verified_at',
         'verification_code',
         'password_reset_token',
+        'last_login',
     ];
 
     protected $hidden = [
@@ -46,9 +50,14 @@ class User extends Authenticatable
         return $this->hasOne(Hospital::class);
     }
 
-    public function messages(): HasMany
+    public function sentMessages(): HasMany
     {
-        return $this->hasMany(Message::class);
+        return $this->hasMany(Message::class, 'sender_id');
+    }
+
+    public function receivedMessages(): HasMany
+    {
+        return $this->hasMany(Message::class, 'receiver_id');
     }
 
     public function notifications(): HasMany
