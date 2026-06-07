@@ -13,7 +13,6 @@
 
 @php
     $pendingApprovals = \App\Models\User::whereNull('email_verified_at')->count();
-    $openRequests = \App\Models\BloodRequest::where('status', 'open')->count();
     $totalDonations = \App\Models\Donation::count();
     $totalDonatedMl = \App\Models\Donation::sum('quantity');
     $totalMessages = \App\Models\Message::count();
@@ -34,38 +33,7 @@
 
 <div class="dashboard-wrapper">
     <div class="dashboard-sidebar-overlay" id="sidebarOverlay"></div>
-    <aside class="dashboard-sidebar" id="dashboardSidebar">
-        <div class="sidebar-title">Main Menu</div>
-        <a href="{{ route('admin.dashboard') }}" class="sidebar-link active">
-            <i class="fas fa-tachometer-alt"></i> Dashboard
-        </a>
-        <a href="{{ route('admin.users') }}" class="sidebar-link">
-            <i class="fas fa-users"></i> Manage Users
-        </a>
-        <a href="{{ route('admin.analytics') }}" class="sidebar-link">
-            <i class="fas fa-chart-bar"></i> Analytics
-        </a>
-        <div class="sidebar-title">Communication</div>
-        <a href="{{ route('messages') }}" class="sidebar-link d-flex align-items-center justify-content-between">
-            <span><i class="fas fa-envelope"></i> Messages</span>
-            @php $unreadCount = \App\Models\Message::where('receiver_id', Auth::id())->whereNull('read_at')->count(); @endphp
-            @if ($unreadCount > 0)
-                <span class="badge bg-danger rounded-pill">{{ $unreadCount }}</span>
-            @endif
-        </a>
-        <div class="sidebar-title">Account</div>
-        <a href="{{ route('profile') }}" class="sidebar-link">
-            <i class="fas fa-user-shield"></i> Admin Profile
-        </a>
-        <div class="mt-4 px-3">
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit" class="btn btn-outline-danger w-100 btn-sm">
-                    <i class="fas fa-sign-out-alt me-1"></i> Logout
-                </button>
-            </form>
-        </div>
-    </aside>
+    @include('partials.sidebar')
 
     <main class="dashboard-content">
         <div class="page-header">

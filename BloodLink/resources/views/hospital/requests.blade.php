@@ -13,38 +13,7 @@
 
 <div class="dashboard-wrapper">
     <div class="dashboard-sidebar-overlay" id="sidebarOverlay"></div>
-    <aside class="dashboard-sidebar" id="dashboardSidebar">
-        <div class="sidebar-title">Main Menu</div>
-        <a href="{{ route('hospital.dashboard') }}" class="sidebar-link">
-            <i class="fas fa-tachometer-alt"></i> Dashboard
-        </a>
-        <a href="{{ route('hospital.requests') }}" class="sidebar-link active">
-            <i class="fas fa-list"></i> My Requests
-        </a>
-        <a href="{{ route('hospital.request.create') }}" class="sidebar-link">
-            <i class="fas fa-plus-circle"></i> Create Request
-        </a>
-        <div class="sidebar-title">Communication</div>
-        <a href="{{ route('messages') }}" class="sidebar-link d-flex align-items-center justify-content-between">
-            <span><i class="fas fa-envelope"></i> Messages</span>
-            @php $unreadCount = \App\Models\Message::where('receiver_id', Auth::id())->whereNull('read_at')->count(); @endphp
-            @if ($unreadCount > 0)
-                <span class="badge bg-danger rounded-pill">{{ $unreadCount }}</span>
-            @endif
-        </a>
-        <div class="sidebar-title">Account</div>
-        <a href="{{ route('profile') }}" class="sidebar-link">
-            <i class="fas fa-user-cog"></i> Hospital Profile
-        </a>
-        <div class="mt-4 px-3">
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit" class="btn btn-outline-danger w-100 btn-sm">
-                    <i class="fas fa-sign-out-alt me-1"></i> Logout
-                </button>
-            </form>
-        </div>
-    </aside>
+    @include('partials.sidebar')
 
     <main class="dashboard-content">
         <div class="page-header">
@@ -58,6 +27,19 @@
                 </a>
             </div>
         </div>
+
+        @if (session('success'))
+            <div class="alert alert-success alert-dismissible fade show">
+                <i class="fas fa-check-circle me-1"></i> {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+        @if (session('error'))
+            <div class="alert alert-danger alert-dismissible fade show">
+                <i class="fas fa-exclamation-circle me-1"></i> {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
 
         @if ($requests->isEmpty())
             <div class="card">

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Message;
+use App\Models\Friend;
 use App\Mail\VerifyEmailMail;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
@@ -360,6 +361,7 @@ class AuthController extends Controller
             ->values()
             ->toArray();
 
+        $authUser = Auth::user();
         $conversations = User::whereIn('id', $conversationUserIds)->get()->map(function ($user) use ($userId) {
             $user->latest_message = Message::where(function ($q) use ($userId, $user) {
                 $q->where('sender_id', $userId)->where('receiver_id', $user->id);
@@ -370,6 +372,10 @@ class AuthController extends Controller
             return $user;
         })->filter(function ($user) {
             return $user->latest_message !== null;
+        })->filter(function ($user) use ($authUser) {
+            if ($authUser->role === 'admin') return true;
+            if ($user->role === 'admin') return true;
+            return Friend::areFriends($authUser->id, $user->id);
         })->sortByDesc(function ($user) {
             return $user->latest_message->created_at;
         })->values();
@@ -380,6 +386,7 @@ class AuthController extends Controller
     public function showConversation(User $user)
     {
         $userId = Auth::id();
+
         $messages = Message::where(function ($q) use ($userId, $user) {
             $q->where('sender_id', $userId)->where('receiver_id', $user->id);
         })->orWhere(function ($q) use ($userId, $user) {
@@ -402,6 +409,10 @@ class AuthController extends Controller
 
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
+        }
+
+        if (Auth::user()->role !== 'admin' && $user->role !== 'admin' && !Friend::areFriends(Auth::id(), $user->id)) {
+            return back()->with('error', 'You can only send messages to your friends.');
         }
 
         Message::create([

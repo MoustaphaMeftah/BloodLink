@@ -13,11 +13,8 @@ class HospitalController extends Controller
     public function dashboard()
     {
         $hospital = Auth::user()->hospital;
-        $requests = BloodRequest::where('hospital_id', $hospital->id)
-            ->orderByDesc('created_at')
-            ->paginate(10);
 
-        return view('hospital.dashboard', compact('hospital', 'requests'));
+        return view('hospital.dashboard', compact('hospital'));
     }
 
     public function manageRequests()

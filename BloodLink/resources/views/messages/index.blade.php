@@ -13,38 +13,7 @@
 
 <div class="dashboard-wrapper">
     <div class="dashboard-sidebar-overlay" id="sidebarOverlay"></div>
-    <aside class="dashboard-sidebar" id="dashboardSidebar">
-        <div class="sidebar-title">Main Menu</div>
-        <a href="{{ route('admin.dashboard') }}" class="sidebar-link">
-            <i class="fas fa-tachometer-alt"></i> Dashboard
-        </a>
-        <a href="{{ route('admin.users') }}" class="sidebar-link">
-            <i class="fas fa-users"></i> Manage Users
-        </a>
-        <a href="{{ route('admin.analytics') }}" class="sidebar-link">
-            <i class="fas fa-chart-bar"></i> Analytics
-        </a>
-        <div class="sidebar-title">Communication</div>
-        <a href="{{ route('messages') }}" class="sidebar-link active d-flex align-items-center justify-content-between">
-            <span><i class="fas fa-envelope"></i> Messages</span>
-            @php $unreadCount = \App\Models\Message::where('receiver_id', Auth::id())->whereNull('read_at')->count(); @endphp
-            @if ($unreadCount > 0)
-                <span class="badge bg-danger rounded-pill">{{ $unreadCount }}</span>
-            @endif
-        </a>
-        <div class="sidebar-title">Account</div>
-        <a href="{{ route('profile') }}" class="sidebar-link">
-            <i class="fas fa-user-shield"></i> Admin Profile
-        </a>
-        <div class="mt-4 px-3">
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit" class="btn btn-outline-danger w-100 btn-sm">
-                    <i class="fas fa-sign-out-alt me-1"></i> Logout
-                </button>
-            </form>
-        </div>
-    </aside>
+    @include('partials.sidebar')
 
     <main class="dashboard-content">
         <div class="page-header">
@@ -95,7 +64,15 @@
             </div>
         @endif
 
-        @php $allUsers = \App\Models\User::where('id', '!=', Auth::id())->orderBy('name')->get(); @endphp
+        @php
+            if (Auth::user()->role === 'admin') {
+                $recipients = \App\Models\User::where('id', '!=', Auth::id())->orderBy('name')->get();
+            } else {
+                $friends = Auth::user()->acceptedFriends();
+                $admins = \App\Models\User::where('role', 'admin')->where('id', '!=', Auth::id())->get();
+                $recipients = $friends->merge($admins)->unique('id')->sortBy('name')->values();
+            }
+        @endphp
         <div class="modal fade" id="newMessageModal" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
@@ -104,9 +81,9 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <input type="text" class="form-control mb-3" id="recipientSearch" placeholder="Search users..." onkeyup="filterUsers()">
+                        <input type="text" class="form-control mb-3" id="recipientSearch" placeholder="{{ Auth::user()->role === 'admin' ? 'Search users...' : 'Search friends...' }}" onkeyup="filterUsers()">
                         <div class="list-group" id="userList" style="max-height:350px;overflow-y:auto;">
-                            @forelse ($allUsers as $u)
+                            @forelse ($recipients as $u)
                                 <a href="{{ route('messages.show', $u) }}" class="list-group-item list-group-item-action d-flex align-items-center gap-3">
                                     <div style="width:36px;height:36px;border-radius:50%;background:var(--primary-gradient);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:0.85rem;flex-shrink:0;">
                                         {{ strtoupper(substr($u->name, 0, 1)) }}
@@ -118,7 +95,17 @@
                                     <i class="fas fa-chevron-right text-muted ms-auto" style="font-size:0.8rem;"></i>
                                 </a>
                             @empty
-                                <div class="text-center text-muted py-3">No other users found</div>
+                                <div class="text-center text-muted py-4">
+                                    <i class="fas fa-user-friends" style="font-size:2rem;opacity:0.3;margin-bottom:0.5rem;display:block;"></i>
+                                    @if (Auth::user()->role === 'admin')
+                                        <p>No users found.</p>
+                                    @else
+                                        <p>No friends yet. Add friends to start messaging.</p>
+                                        <a href="{{ route('friends') }}" class="btn btn-danger btn-sm">
+                                            <i class="fas fa-user-plus me-1"></i> Find Friends
+                                        </a>
+                                    @endif
+                                </div>
                             @endforelse
                         </div>
                     </div>

@@ -54,6 +54,7 @@
                             @endif
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ route('profile') }}"><i class="fas fa-user-cog"></i> Profile</a></li>
+                            <li><a class="dropdown-item" href="{{ route('friends') }}"><i class="fas fa-user-friends"></i> Friends</a></li>
                             <li>
                                 <a class="dropdown-item d-flex align-items-center justify-content-between" href="{{ route('messages') }}">
                                     <span><i class="fas fa-envelope"></i> Messages</span>

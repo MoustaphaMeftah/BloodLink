@@ -7,6 +7,7 @@ use App\Http\Controllers\HospitalController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\RequestController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\FriendController;
 
 /*
 |--------------------------------------------------------------------------
@@ -69,12 +70,24 @@ Route::middleware('auth')->group(function () {
         Route::get('/admin/users', [AdminController::class, 'manageUsers'])->name('admin.users');
         Route::get('/admin/analytics', [AdminController::class, 'showAnalytics'])->name('admin.analytics');
         Route::put('/admin/users/{user}/approve', [AdminController::class, 'approveUser'])->name('admin.user.approve');
+        Route::put('/admin/users/{user}', [AdminController::class, 'updateUser'])->name('admin.user.update');
+        Route::delete('/admin/users/{user}', [AdminController::class, 'deleteUser'])->name('admin.user.delete');
+        Route::get('/admin/requests', [AdminController::class, 'manageRequests'])->name('admin.requests');
+        Route::put('/admin/requests/{bloodRequest}/status', [AdminController::class, 'updateRequestStatus'])->name('admin.request.status');
     });
 
     // Messages Routes
     Route::get('/messages', [AuthController::class, 'showMessages'])->name('messages');
     Route::get('/messages/{user}', [AuthController::class, 'showConversation'])->name('messages.show');
     Route::post('/messages/{user}', [AuthController::class, 'sendMessage'])->name('messages.send');
+
+    // Friend Routes
+    Route::get('/friends', [FriendController::class, 'index'])->name('friends');
+    Route::get('/friends/find', [FriendController::class, 'findPeople'])->name('friends.find');
+    Route::post('/friends/{user}/send', [FriendController::class, 'sendRequest'])->name('friends.send');
+    Route::post('/friends/{user}/accept', [FriendController::class, 'acceptRequest'])->name('friends.accept');
+    Route::post('/friends/{user}/decline', [FriendController::class, 'declineRequest'])->name('friends.decline');
+    Route::delete('/friends/{user}/remove', [FriendController::class, 'removeFriend'])->name('friends.remove');
 });
 
 // Email Verification Routes

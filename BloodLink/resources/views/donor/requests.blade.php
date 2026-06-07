@@ -13,38 +13,7 @@
 
 <div class="dashboard-wrapper">
     <div class="dashboard-sidebar-overlay" id="sidebarOverlay"></div>
-    <aside class="dashboard-sidebar" id="dashboardSidebar">
-        <div class="sidebar-title">Main Menu</div>
-        <a href="{{ route('donor.dashboard') }}" class="sidebar-link">
-            <i class="fas fa-tachometer-alt"></i> Dashboard
-        </a>
-        <a href="{{ route('donor.requests') }}" class="sidebar-link active">
-            <i class="fas fa-list"></i> Browse Requests
-        </a>
-        <a href="{{ route('donor.history') }}" class="sidebar-link">
-            <i class="fas fa-history"></i> Donation History
-        </a>
-        <div class="sidebar-title">Communication</div>
-        <a href="{{ route('messages') }}" class="sidebar-link d-flex align-items-center justify-content-between">
-            <span><i class="fas fa-envelope"></i> Messages</span>
-            @php $unreadCount = \App\Models\Message::where('receiver_id', Auth::id())->whereNull('read_at')->count(); @endphp
-            @if ($unreadCount > 0)
-                <span class="badge bg-danger rounded-pill">{{ $unreadCount }}</span>
-            @endif
-        </a>
-        <div class="sidebar-title">Account</div>
-        <a href="{{ route('profile') }}" class="sidebar-link">
-            <i class="fas fa-user-cog"></i> My Profile
-        </a>
-        <div class="mt-4 px-3">
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit" class="btn btn-outline-danger w-100 btn-sm">
-                    <i class="fas fa-sign-out-alt me-1"></i> Logout
-                </button>
-            </form>
-        </div>
-    </aside>
+    @include('partials.sidebar')
 
     <main class="dashboard-content">
         <div class="page-header">
@@ -126,9 +95,24 @@
                                                         <span class="badge bg-secondary"><i class="fas fa-times me-1"></i>Declined</span>
                                                     @endif
                                                     @if ($hospitalUser)
-                                                        <a href="{{ route('messages.show', $hospitalUser) }}" class="btn btn-outline-primary btn-sm" title="Message Hospital">
-                                                            <i class="fas fa-envelope"></i>
-                                                        </a>
+                                                        @php
+                                                            $isFriend = \App\Models\Friend::areFriends(Auth::id(), $hospitalUser->id);
+                                                            $hasSent = Auth::user()->hasSentRequestTo($hospitalUser);
+                                                        @endphp
+                                                        @if ($isFriend || $hospitalUser->role === 'admin')
+                                                            <a href="{{ route('messages.show', $hospitalUser) }}" class="btn btn-outline-primary btn-sm" title="Message Hospital">
+                                                                <i class="fas fa-envelope"></i>
+                                                            </a>
+                                                        @elseif (!$hasSent)
+                                                            <form method="POST" action="{{ route('friends.send', $hospitalUser) }}" class="d-inline">
+                                                                @csrf
+                                                                <button type="submit" class="btn btn-outline-secondary btn-sm" title="Add Friend">
+                                                                    <i class="fas fa-user-plus"></i>
+                                                                </button>
+                                                            </form>
+                                                        @else
+                                                            <span class="badge bg-secondary" style="font-size:0.6rem;">Pending</span>
+                                                        @endif
                                                     @endif
                                                 </div>
                                             @else
@@ -148,9 +132,24 @@
                                                         </button>
                                                     </form>
                                                     @if ($hospitalUser)
-                                                        <a href="{{ route('messages.show', $hospitalUser) }}" class="btn btn-outline-primary btn-sm" title="Message Hospital">
-                                                            <i class="fas fa-envelope"></i>
-                                                        </a>
+                                                        @php
+                                                            $isFriend = \App\Models\Friend::areFriends(Auth::id(), $hospitalUser->id);
+                                                            $hasSent = Auth::user()->hasSentRequestTo($hospitalUser);
+                                                        @endphp
+                                                        @if ($isFriend || $hospitalUser->role === 'admin')
+                                                            <a href="{{ route('messages.show', $hospitalUser) }}" class="btn btn-outline-primary btn-sm" title="Message Hospital">
+                                                                <i class="fas fa-envelope"></i>
+                                                            </a>
+                                                        @elseif (!$hasSent)
+                                                            <form method="POST" action="{{ route('friends.send', $hospitalUser) }}" class="d-inline">
+                                                                @csrf
+                                                                <button type="submit" class="btn btn-outline-secondary btn-sm" title="Add Friend">
+                                                                    <i class="fas fa-user-plus"></i>
+                                                                </button>
+                                                            </form>
+                                                        @else
+                                                            <span class="badge bg-secondary" style="font-size:0.6rem;">Pending</span>
+                                                        @endif
                                                     @endif
                                                 </div>
                                             @endif
@@ -209,9 +208,24 @@
                                             <span class="badge bg-secondary py-2"><i class="fas fa-times me-1"></i>Declined</span>
                                         @endif
                                         @if ($hospitalUser)
-                                            <a href="{{ route('messages.show', $hospitalUser) }}" class="btn btn-outline-primary btn-sm">
-                                                <i class="fas fa-envelope me-1"></i> Message
-                                            </a>
+                                            @php
+                                                $isFriend = \App\Models\Friend::areFriends(Auth::id(), $hospitalUser->id);
+                                                $hasSent = Auth::user()->hasSentRequestTo($hospitalUser);
+                                            @endphp
+                                            @if ($isFriend || $hospitalUser->role === 'admin')
+                                                <a href="{{ route('messages.show', $hospitalUser) }}" class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-envelope me-1"></i> Message
+                                                </a>
+                                            @elseif (!$hasSent)
+                                                <form method="POST" action="{{ route('friends.send', $hospitalUser) }}" class="d-inline">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                                        <i class="fas fa-user-plus me-1"></i> Add Friend
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <span class="badge bg-secondary py-2">Pending</span>
+                                            @endif
                                         @endif
                                     @else
                                         <form method="POST" action="{{ route('donor.respond', $req->id) }}" class="flex-grow-1">
@@ -229,9 +243,24 @@
                                             </button>
                                         </form>
                                         @if ($hospitalUser)
-                                            <a href="{{ route('messages.show', $hospitalUser) }}" class="btn btn-outline-primary btn-sm" title="Message Hospital">
-                                                <i class="fas fa-envelope"></i>
-                                            </a>
+                                            @php
+                                                $isFriend = \App\Models\Friend::areFriends(Auth::id(), $hospitalUser->id);
+                                                $hasSent = Auth::user()->hasSentRequestTo($hospitalUser);
+                                            @endphp
+                                            @if ($isFriend || $hospitalUser->role === 'admin')
+                                                <a href="{{ route('messages.show', $hospitalUser) }}" class="btn btn-outline-primary btn-sm" title="Message Hospital">
+                                                    <i class="fas fa-envelope"></i>
+                                                </a>
+                                            @elseif (!$hasSent)
+                                                <form method="POST" action="{{ route('friends.send', $hospitalUser) }}" class="d-inline">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-outline-secondary btn-sm" title="Add Friend">
+                                                        <i class="fas fa-user-plus"></i>
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <span class="badge bg-secondary" style="font-size:0.6rem;">Pending</span>
+                                            @endif
                                         @endif
                                     @endif
                                 </div>
