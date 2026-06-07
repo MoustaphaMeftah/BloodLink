@@ -8,18 +8,16 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="{{ asset('css/style.css') }}" rel="stylesheet">
 </head>
-<body class="bg-light">
+<body>
 
 @include('partials.navbar')
 
-<div class="container d-flex align-items-center justify-content-center" style="min-height: 100vh; padding-top: 80px;">
-    <div class="card shadow-lg p-4" style="width: 420px; border-radius: 12px; border: none;">
-        <div class="text-center mb-4">
-            <div class="mx-auto bg-danger rounded-circle d-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
-                <i class="fas fa-droplet text-white" style="font-size: 28px;"></i>
-            </div>
-            <h3 class="mt-3 fw-bold">Welcome Back</h3>
-            <p class="text-muted small">Sign in to your BloodLink account</p>
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-icon"><i class="fas fa-droplet"></i></div>
+            <h3>Welcome Back</h3>
+            <p>Sign in to your BloodLink account</p>
         </div>
 
         @if (session('success'))
@@ -40,17 +38,17 @@
             @csrf
 
             <div class="mb-3">
-                <label for="email" class="form-label fw-medium">Email</label>
+                <label for="email" class="form-label">Email</label>
                 <div class="input-group">
-                    <span class="input-group-text bg-white"><i class="fas fa-envelope text-danger"></i></span>
+                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
                     <input type="email" name="email" id="email" class="form-control" placeholder="your@email.com" value="{{ old('email') }}" required>
                 </div>
             </div>
 
             <div class="mb-3">
-                <label for="password" class="form-label fw-medium">Password</label>
+                <label for="password" class="form-label">Password</label>
                 <div class="input-group">
-                    <span class="input-group-text bg-white"><i class="fas fa-lock text-danger"></i></span>
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
                     <input type="password" name="password" id="password" class="form-control" placeholder="Enter your password" required>
                 </div>
             </div>
@@ -60,15 +58,17 @@
                     <input type="checkbox" name="remember" class="form-check-input" id="remember">
                     <label class="form-check-label small" for="remember">Remember me</label>
                 </div>
-                <a href="{{ route('password.request') }}" class="small text-danger text-decoration-none fw-medium">
-                    Forgot password?
-                </a>
+                <a href="{{ route('password.request') }}" class="small text-danger text-decoration-none fw-medium">Forgot password?</a>
             </div>
 
-            <button type="submit" class="btn btn-danger w-100 py-2 fw-bold mb-3" style="border-radius: 8px;">
+            <button type="submit" class="btn btn-danger w-100 py-2 fw-bold mb-3">
                 <i class="fas fa-sign-in-alt me-1"></i> Login
             </button>
         </form>
+
+        <div class="auth-divider">
+            <span>or</span>
+        </div>
 
         <div class="text-center">
             <p class="small text-muted mb-0">

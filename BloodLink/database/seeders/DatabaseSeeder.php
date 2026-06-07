@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             HospitalSeeder::class,
             DonorSeeder::class,
             BloodRequestSeeder::class,
+            TestDataSeeder::class,
         ]);
     }
 }

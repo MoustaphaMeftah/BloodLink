@@ -11,53 +11,131 @@
 <body>
 @include('partials.navbar')
 
-<div class="container mt-5 pt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-danger text-white">
-                    <h4 class="mb-0">Create Blood Request</h4>
-                </div>
-                <div class="card-body">
-                    @if ($errors->any())
-                        <div class="alert alert-danger">{{ $errors->first() }}</div>
-                    @endif
+<div class="dashboard-wrapper">
+    <div class="dashboard-sidebar-overlay" id="sidebarOverlay"></div>
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <div class="sidebar-title">Main Menu</div>
+        <a href="{{ route('hospital.dashboard') }}" class="sidebar-link">
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+        </a>
+        <a href="{{ route('hospital.requests') }}" class="sidebar-link">
+            <i class="fas fa-list"></i> My Requests
+        </a>
+        <a href="{{ route('hospital.request.create') }}" class="sidebar-link">
+            <i class="fas fa-plus-circle"></i> Create Request
+        </a>
+        <div class="sidebar-title">Communication</div>
+        <a href="{{ route('messages') }}" class="sidebar-link d-flex align-items-center justify-content-between">
+            <span><i class="fas fa-envelope"></i> Messages</span>
+            @php $unreadCount = \App\Models\Message::where('receiver_id', Auth::id())->whereNull('read_at')->count(); @endphp
+            @if ($unreadCount > 0)
+                <span class="badge bg-danger rounded-pill">{{ $unreadCount }}</span>
+            @endif
+        </a>
+        <div class="sidebar-title">Account</div>
+        <a href="{{ route('profile') }}" class="sidebar-link">
+            <i class="fas fa-user-cog"></i> Hospital Profile
+        </a>
+        <div class="mt-4 px-3">
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="btn btn-outline-danger w-100 btn-sm">
+                    <i class="fas fa-sign-out-alt me-1"></i> Logout
+                </button>
+            </form>
+        </div>
+    </aside>
 
-                    <form method="POST" action="{{ route('hospital.request.store') }}">
-                        @csrf
-                        <div class="mb-3">
-                            <label for="blood_type" class="form-label fw-medium">Blood Type</label>
-                            <select name="blood_type" id="blood_type" class="form-control" required>
-                                @foreach(['O+','O-','A+','A-','B+','B-','AB+','AB-'] as $bt)
-                                    <option value="{{ $bt }}">{{ $bt }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="quantity" class="form-label fw-medium">Quantity (ml)</label>
-                            <input type="number" name="quantity" id="quantity" class="form-control" min="1" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="urgency" class="form-label fw-medium">Urgency</label>
-                            <select name="urgency" id="urgency" class="form-control" required>
-                                <option value="low">Low</option>
-                                <option value="medium">Medium</option>
-                                <option value="high">High</option>
-                                <option value="critical">Critical</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="location" class="form-label fw-medium">Location</label>
-                            <input type="text" name="location" id="location" class="form-control" required>
-                        </div>
-                        <button type="submit" class="btn btn-danger w-100 fw-bold">Create Request</button>
-                    </form>
+    <main class="dashboard-content">
+        <div class="page-header">
+            <div>
+                <button class="sidebar-toggle me-2" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+                <h3><i class="fas fa-plus-circle"></i> Create Blood Request</h3>
+            </div>
+            <div class="page-actions">
+                <a href="{{ route('hospital.dashboard') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i> Back
+                </a>
+            </div>
+        </div>
+
+        @if ($errors->any())
+            <div class="alert alert-danger alert-dismissible fade show">
+                <i class="fas fa-exclamation-circle me-1"></i> {{ $errors->first() }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-file-medical me-2 text-danger"></i> Request Details
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ route('hospital.request.store') }}">
+                            @csrf
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="blood_type" class="form-label">Blood Type</label>
+                                    <select name="blood_type" id="blood_type" class="form-select" required>
+                                        <option value="">Select Blood Type</option>
+                                        @foreach(['O+','O-','A+','A-','B+','B-','AB+','AB-'] as $bt)
+                                            <option value="{{ $bt }}">{{ $bt }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="quantity" class="form-label">Quantity (ml)</label>
+                                    <input type="number" name="quantity" id="quantity" class="form-control" min="1" placeholder="e.g. 500" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="urgency" class="form-label">Urgency</label>
+                                    <select name="urgency" id="urgency" class="form-select" required>
+                                        <option value="low">Low - Routine</option>
+                                        <option value="medium">Medium - Scheduled</option>
+                                        <option value="high">High - Urgent</option>
+                                        <option value="critical">Critical - Emergency</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="location" class="form-label">Location</label>
+                                    <input type="text" name="location" id="location" class="form-control" placeholder="City or address" required>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 mt-4">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-paper-plane me-1"></i> Create Request
+                                </button>
+                                <a href="{{ route('hospital.dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-info-circle me-2 text-danger"></i> Tips
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0" style="font-size:0.9rem;">
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Be specific with blood type</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Set the right urgency level</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Include exact location</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Update status when fulfilled</li>
+                            <li><i class="fas fa-check-circle text-success me-2"></i> Respond to donor inquiries</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="{{ asset('js/main.js') }}"></script>
 </body>
 </html>

@@ -8,18 +8,16 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="{{ asset('css/style.css') }}" rel="stylesheet">
 </head>
-<body class="bg-light">
+<body>
 
 @include('partials.navbar')
 
-<div class="container d-flex align-items-center justify-content-center" style="min-height: 100vh; padding-top: 80px;">
-    <div class="card shadow-lg p-4" style="width: 420px; border-radius: 12px; border: none;">
-        <div class="text-center mb-4">
-            <div class="mx-auto bg-danger rounded-circle d-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
-                <i class="fas fa-droplet text-white" style="font-size: 28px;"></i>
-            </div>
-            <h3 class="mt-3 fw-bold">Reset Password</h3>
-            <p class="text-muted small">Enter your new password</p>
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-icon"><i class="fas fa-droplet"></i></div>
+            <h3>Reset Password</h3>
+            <p>Enter your new password</p>
         </div>
 
         @if ($errors->any())
@@ -33,26 +31,28 @@
             @csrf
             <input type="hidden" name="token" value="{{ $token }}">
             <div class="mb-3">
-                <label for="password" class="form-label fw-medium">New Password</label>
+                <label for="password" class="form-label">New Password</label>
                 <div class="input-group">
-                    <span class="input-group-text bg-white"><i class="fas fa-lock text-danger"></i></span>
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
                     <input type="password" name="password" id="password" class="form-control" placeholder="Min 8 characters" required>
                 </div>
             </div>
             <div class="mb-3">
-                <label for="password_confirmation" class="form-label fw-medium">Confirm Password</label>
+                <label for="password_confirmation" class="form-label">Confirm Password</label>
                 <div class="input-group">
-                    <span class="input-group-text bg-white"><i class="fas fa-check-circle text-danger"></i></span>
+                    <span class="input-group-text"><i class="fas fa-check-circle"></i></span>
                     <input type="password" name="password_confirmation" id="password_confirmation" class="form-control" placeholder="Repeat password" required>
                 </div>
             </div>
-            <button type="submit" class="btn btn-danger w-100 py-2 fw-bold" style="border-radius: 8px;">
+            <button type="submit" class="btn btn-danger w-100 py-2 fw-bold">
                 <i class="fas fa-save me-1"></i> Reset Password
             </button>
         </form>
 
         <div class="text-center mt-3">
-            <a href="{{ route('login') }}" class="text-danger text-decoration-none fw-medium">Back to Login</a>
+            <a href="{{ route('login') }}" class="text-danger text-decoration-none fw-medium">
+                <i class="fas fa-arrow-left me-1"></i> Back to Login
+            </a>
         </div>
     </div>
 </div>
