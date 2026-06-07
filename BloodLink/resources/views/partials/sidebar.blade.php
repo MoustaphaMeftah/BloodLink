@@ -16,6 +16,9 @@
         <a href="{{ route('donor.history') }}" class="sidebar-link {{ str_starts_with($route, 'donor.history') ? 'active' : '' }}">
             <i class="fas fa-history"></i> Donation History
         </a>
+        <a href="{{ route('donor.nearby') }}" class="sidebar-link {{ str_starts_with($route, 'donor.nearby') ? 'active' : '' }}">
+            <i class="fas fa-map-marker-alt"></i> Nearby Requests
+        </a>
     @elseif ($role === 'hospital')
         <a href="{{ route('hospital.dashboard') }}" class="sidebar-link {{ str_starts_with($route, 'hospital.dashboard') ? 'active' : '' }}">
             <i class="fas fa-tachometer-alt"></i> Dashboard
@@ -25,6 +28,9 @@
         </a>
         <a href="{{ route('hospital.request.create') }}" class="sidebar-link {{ str_starts_with($route, 'hospital.request.create') ? 'active' : '' }}">
             <i class="fas fa-plus-circle"></i> Create Request
+        </a>
+        <a href="{{ route('hospital.nearby-donors') }}" class="sidebar-link {{ str_starts_with($route, 'hospital.nearby-donors') ? 'active' : '' }}">
+            <i class="fas fa-map-marker-alt"></i> Nearby Donors
         </a>
     @elseif ($role === 'admin')
         <a href="{{ route('admin.dashboard') }}" class="sidebar-link {{ str_starts_with($route, 'admin.dashboard') ? 'active' : '' }}">
@@ -39,12 +45,23 @@
         <a href="{{ route('admin.analytics') }}" class="sidebar-link {{ str_starts_with($route, 'admin.analytics') ? 'active' : '' }}">
             <i class="fas fa-chart-bar"></i> Analytics
         </a>
+        <a href="{{ route('admin.activity-log') }}" class="sidebar-link {{ str_starts_with($route, 'admin.activity-log') ? 'active' : '' }}">
+            <i class="fas fa-history"></i> Activity Log
+        </a>
+        <div class="sidebar-title">Maps</div>
+        <a href="{{ route('admin.map') }}" class="sidebar-link {{ str_starts_with($route, 'admin.map') ? 'active' : '' }}">
+            <i class="fas fa-map-marked-alt"></i> View Map
+        </a>
     @endif
 
     @if ($role !== 'admin')
     <div class="sidebar-title">Social</div>
-    <a href="{{ route('friends') }}" class="sidebar-link {{ str_starts_with($route, 'friends') ? 'active' : '' }}">
-        <i class="fas fa-user-friends"></i> Friends
+    <a href="{{ route('friends') }}" class="sidebar-link d-flex align-items-center justify-content-between {{ str_starts_with($route, 'friends') ? 'active' : '' }}">
+        <span><i class="fas fa-user-friends"></i> Friends</span>
+        @php $pendingFriendCount = \App\Models\Friend::where('friend_id', Auth::id())->where('status', 'pending')->count(); @endphp
+        @if ($pendingFriendCount > 0)
+            <span class="badge bg-danger rounded-pill">{{ $pendingFriendCount }}</span>
+        @endif
     </a>
     @endif
 

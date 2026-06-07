@@ -2,18 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Models\Message;
-use App\Models\Friend;
+use App\Helpers\ActivityLogger;
+use App\Mail\ResetPasswordMail;
 use App\Mail\VerifyEmailMail;
+use App\Models\Friend;
+use App\Models\Message;
+use App\Models\User;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use App\Mail\ResetPasswordMail;
 
 class AuthController extends Controller
 {
@@ -52,43 +53,50 @@ class AuthController extends Controller
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
             }
+
             return back()->withErrors($validator)->withInput();
         }
 
         try {
             $user = User::where('email', $request->email)->first();
 
-            if (!$user || !Hash::check($request->password, $user->password)) {
+            if (! $user || ! Hash::check($request->password, $user->password)) {
                 if ($request->wantsJson()) {
                     return response()->json(['success' => false, 'message' => 'Invalid credentials'], 401);
                 }
+
                 return back()->withErrors(['email' => 'Invalid credentials']);
             }
 
-            if (!$user->hasVerifiedEmail()) {
+            if (! $user->hasVerifiedEmail()) {
                 if ($request->wantsJson()) {
                     return response()->json(['success' => false, 'message' => 'Please verify your email first'], 403);
                 }
+
                 return back()->withErrors(['email' => 'Please verify your email first']);
             }
 
             if ($request->wantsJson()) {
                 $token = $user->createToken('auth_token')->plainTextToken;
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Login successful',
                     'user' => $user,
-                    'token' => $token
+                    'token' => $token,
                 ], 200);
             }
 
-            Auth::attempt($request->only('email', 'password'), $request->boolean('remember'));
+            Auth::login($user, $request->boolean('remember'));
             $request->session()->regenerate();
+            ActivityLogger::log('login', "User {$user->email} logged in.");
+
             return redirect($this->dashboardUrl($user));
         } catch (\Exception $e) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
             }
+
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -101,7 +109,7 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users',
             'phone' => 'required|string|max:20',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|in:donor,hospital,patient',
+            'role' => 'required|in:donor,hospital',
             'city' => 'required|string|max:255',
             'blood_type' => 'nullable|in:O+,O-,A+,A-,B+,B-,AB+,AB-',
         ]);
@@ -110,6 +118,7 @@ class AuthController extends Controller
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
             }
+
             return back()->withErrors($validator)->withInput();
         }
 
@@ -117,7 +126,7 @@ class AuthController extends Controller
             $verificationCode = Str::random(60);
 
             $user = User::create([
-                'name' => $request->first_name . ' ' . $request->last_name,
+                'name' => $request->first_name.' '.$request->last_name,
                 'email' => $request->email,
                 'phone' => $request->phone,
                 'password' => Hash::make($request->password),
@@ -131,6 +140,8 @@ class AuthController extends Controller
                 $user->donor()->create([
                     'blood_type' => $request->blood_type,
                     'city' => $request->city,
+                    'latitude' => $request->latitude,
+                    'longitude' => $request->longitude,
                     'availability' => true,
                 ]);
             }
@@ -139,6 +150,9 @@ class AuthController extends Controller
                 $user->hospital()->create([
                     'name' => $user->name,
                     'address' => $request->city,
+                    'latitude' => $request->latitude,
+                    'longitude' => $request->longitude,
+                    'city' => $request->city,
                     'phone' => $request->phone,
                     'contact_person' => $user->name,
                 ]);
@@ -154,16 +168,19 @@ class AuthController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'Registration successful. Please verify your email.',
-                    'user' => $user
+                    'user' => $user,
                 ], 201);
             }
 
             Auth::login($user);
+            ActivityLogger::log('register', "User {$user->email} registered as {$user->role}.");
+
             return redirect($this->dashboardUrl($user))->with('success', 'Registration successful.');
         } catch (\Exception $e) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
             }
+
             return back()->withErrors(['error' => $e->getMessage()])->withInput();
         }
     }
@@ -174,12 +191,15 @@ class AuthController extends Controller
             if ($request->user()->currentAccessToken()) {
                 $request->user()->currentAccessToken()->delete();
             }
+
             return response()->json(['success' => true, 'message' => 'Logged out successfully'], 200);
         }
 
+        ActivityLogger::log('logout', 'User logged out.');
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect()->route('home');
     }
 
@@ -217,16 +237,18 @@ class AuthController extends Controller
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
             }
+
             return back()->withErrors($validator)->withInput();
         }
 
         try {
             $user = User::where('password_reset_token', $request->token)->first();
 
-            if (!$user) {
+            if (! $user) {
                 if ($request->wantsJson()) {
                     return response()->json(['success' => false, 'message' => 'Invalid reset token'], 401);
                 }
+
                 return back()->withErrors(['token' => 'Invalid reset token']);
             }
 
@@ -244,6 +266,7 @@ class AuthController extends Controller
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
             }
+
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -253,24 +276,26 @@ class AuthController extends Controller
         return response()->json(['success' => true, 'user' => $request->user()], 200);
     }
 
-    public function verifyEmail(Request $request, string $token = null)
+    public function verifyEmail(Request $request, ?string $token = null)
     {
         $code = $token ?? $request->verification_code;
 
-        if (!$code) {
+        if (! $code) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => 'Verification code is required'], 422);
             }
+
             return redirect()->route('login')->withErrors(['error' => 'Verification code is required']);
         }
 
         try {
             $user = User::where('verification_code', $code)->first();
 
-            if (!$user) {
+            if (! $user) {
                 if ($request->wantsJson()) {
                     return response()->json(['success' => false, 'message' => 'Invalid verification code'], 401);
                 }
+
                 return redirect()->route('login')->withErrors(['error' => 'Invalid verification code']);
             }
 
@@ -283,11 +308,14 @@ class AuthController extends Controller
                 return response()->json(['success' => true, 'message' => 'Email verified successfully'], 200);
             }
             Auth::login($user);
+            ActivityLogger::log('verify_email', "User {$user->email} verified email.");
+
             return redirect($this->dashboardUrl($user))->with('success', 'Email verified successfully. Welcome!');
         } catch (\Exception $e) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
             }
+
             return redirect()->route('login')->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -320,6 +348,7 @@ class AuthController extends Controller
     public function showProfile()
     {
         $user = Auth::user();
+
         return view('profile.show', compact('user'));
     }
 
@@ -331,6 +360,8 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'phone' => 'nullable|string|max:20',
             'city' => 'nullable|string|max:255',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
         ]);
 
         if ($validator->fails()) {
@@ -338,6 +369,16 @@ class AuthController extends Controller
         }
 
         $user->update($request->only(['name', 'phone', 'city']));
+
+        if ($user->role === 'donor' && $user->donor) {
+            $user->donor->update($request->only(['latitude', 'longitude']));
+        }
+
+        if ($user->role === 'hospital' && $user->hospital) {
+            $user->hospital->update($request->only(['latitude', 'longitude']));
+        }
+
+        ActivityLogger::log('update_profile', 'User updated their profile.');
 
         return back()->with('success', 'Profile updated successfully.');
     }
@@ -369,18 +410,37 @@ class AuthController extends Controller
                 $q->where('sender_id', $user->id)->where('receiver_id', $userId);
             })->orderByDesc('created_at')->first();
 
+            $user->unread_count = Message::where('sender_id', $user->id)
+                ->where('receiver_id', $userId)
+                ->whereNull('read_at')
+                ->count();
+
             return $user;
         })->filter(function ($user) {
             return $user->latest_message !== null;
         })->filter(function ($user) use ($authUser) {
-            if ($authUser->role === 'admin') return true;
-            if ($user->role === 'admin') return true;
+            if ($authUser->role === 'admin') {
+                return true;
+            }
+            if ($user->role === 'admin') {
+                return true;
+            }
+
             return Friend::areFriends($authUser->id, $user->id);
         })->sortByDesc(function ($user) {
             return $user->latest_message->created_at;
         })->values();
 
         return view('messages.index', compact('conversations'));
+    }
+
+    public function markAllMessagesRead()
+    {
+        Message::where('receiver_id', Auth::id())
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        return redirect()->route('messages')->with('success', 'All messages marked as read.');
     }
 
     public function showConversation(User $user)
@@ -411,7 +471,7 @@ class AuthController extends Controller
             return back()->withErrors($validator)->withInput();
         }
 
-        if (Auth::user()->role !== 'admin' && $user->role !== 'admin' && !Friend::areFriends(Auth::id(), $user->id)) {
+        if (Auth::user()->role !== 'admin' && $user->role !== 'admin' && ! Friend::areFriends(Auth::id(), $user->id)) {
             return back()->with('error', 'You can only send messages to your friends.');
         }
 
@@ -421,7 +481,37 @@ class AuthController extends Controller
             'content' => $request->content,
         ]);
 
+        ActivityLogger::log('send_message', "Sent message to {$user->email}.");
+
         return back()->with('success', 'Message sent.');
+    }
+
+    public function getRecipients()
+    {
+        $authUser = Auth::user();
+
+        if ($authUser->role === 'admin') {
+            $recipients = User::where('id', '!=', $authUser->id)->orderBy('name')->get();
+        } else {
+            $friends = $authUser->acceptedFriends();
+            $admins = User::where('role', 'admin')->where('id', '!=', $authUser->id)->get();
+            $recipients = $friends->merge($admins)->unique('id')->sortBy('name')->values();
+        }
+
+        $data = $recipients->map(function ($u) use ($authUser) {
+            $badgeClass = $u->role === 'admin' ? 'dark' : ($u->role === 'hospital' ? 'info' : 'success');
+            return [
+                'id' => $u->id,
+                'name' => $u->name,
+                'email' => $u->email,
+                'role' => ucfirst($u->role),
+                'badge' => $badgeClass,
+                'initial' => strtoupper(substr($u->name, 0, 1)),
+                'url' => route('messages.show', $u),
+            ];
+        });
+
+        return response()->json($data);
     }
 
     private function dashboardUrl(User $user): string

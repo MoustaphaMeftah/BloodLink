@@ -23,7 +23,7 @@ return new class extends Migration
             $table->enum('status', [
                 'pending',
                 'accepted',
-                'rejected'
+                'rejected',
             ])->default('pending');
 
             $table->timestamp('response_date')->nullable();

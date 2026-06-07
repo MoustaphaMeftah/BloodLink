@@ -85,7 +85,6 @@
                 <select name="role" class="form-select" id="roleSelect" required>
                     <option value="donor" {{ request('role') == 'donor' || old('role') == 'donor' ? 'selected' : '' }}>Donor</option>
                     <option value="hospital" {{ request('role') == 'hospital' || old('role') == 'hospital' ? 'selected' : '' }}>Hospital</option>
-                    <option value="patient" {{ request('role') == 'patient' || old('role') == 'patient' ? 'selected' : '' }}>Patient</option>
                 </select>
             </div>
 
@@ -110,6 +109,9 @@
                     <input type="text" name="city" id="city" class="form-control" placeholder="Your city" value="{{ old('city') }}" required>
                 </div>
             </div>
+
+            <input type="hidden" name="latitude" id="regLat" value="{{ old('latitude') }}">
+            <input type="hidden" name="longitude" id="regLng" value="{{ old('longitude') }}">
 
             <button type="submit" class="btn btn-danger w-100 py-2 fw-bold mb-3">
                 <i class="fas fa-user-plus me-1"></i> Create Account
@@ -138,6 +140,13 @@
         }
         roleSelect.addEventListener('change', toggleBloodType);
         toggleBloodType();
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(pos) {
+                document.getElementById('regLat').value = pos.coords.latitude;
+                document.getElementById('regLng').value = pos.coords.longitude;
+            });
+        }
     });
 </script>
 

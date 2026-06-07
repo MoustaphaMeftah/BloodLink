@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('password');
 
             // notre additions
-            $table->enum('role', ['donor', 'hospital', 'patient', 'admin'])->default('donor');
+            $table->enum('role', ['donor', 'hospital', 'admin'])->default('donor');
             $table->string('phone')->nullable();
             $table->string('city')->nullable();
 

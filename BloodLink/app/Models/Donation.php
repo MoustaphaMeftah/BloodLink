@@ -14,7 +14,7 @@ class Donation extends Model
         'donor_id',
         'blood_request_id',
         'donation_date',
-        'quantity'
+        'quantity',
     ];
 
     protected $casts = [

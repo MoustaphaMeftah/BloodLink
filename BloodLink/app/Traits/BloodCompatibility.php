@@ -8,22 +8,43 @@ trait BloodCompatibility
 {
     public static function getCompatibleBloodTypes(string $requestedType): array
     {
-        $compatibility = [
-            'O+' => ['O+'],
+        $donorsForType = [
+            'O+' => ['O+', 'O-'],
             'O-' => ['O-'],
-            'A+' => ['O+', 'A+'],
-            'A-' => ['O-', 'A-'],
-            'B+' => ['O+', 'B+'],
-            'B-' => ['O-', 'B-'],
-            'AB+' => ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'],
-            'AB-' => ['O-', 'A-', 'B-', 'AB-'],
+            'A+' => ['A+', 'A-', 'O+', 'O-'],
+            'A-' => ['A-', 'O-'],
+            'B+' => ['B+', 'B-', 'O+', 'O-'],
+            'B-' => ['B-', 'O-'],
+            'AB+' => ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+            'AB-' => ['AB-', 'A-', 'B-', 'O-'],
         ];
 
-        return $compatibility[$requestedType] ?? [];
+        return $donorsForType[$requestedType] ?? [];
+    }
+
+    public static function getDonatableBloodTypes(string $donorBloodType): array
+    {
+        $recipientsForDonor = [
+            'O+' => ['O+', 'A+', 'B+', 'AB+'],
+            'O-' => ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'],
+            'A+' => ['A+', 'AB+'],
+            'A-' => ['A+', 'A-', 'AB+', 'AB-'],
+            'B+' => ['B+', 'AB+'],
+            'B-' => ['B+', 'B-', 'AB+', 'AB-'],
+            'AB+' => ['AB+'],
+            'AB-' => ['AB+', 'AB-'],
+        ];
+
+        return $recipientsForDonor[$donorBloodType] ?? [];
     }
 
     public function scopeCompatibleWith(Builder $query, string $bloodType): Builder
     {
         return $query->whereIn('blood_type', self::getCompatibleBloodTypes($bloodType));
+    }
+
+    public function scopeDonatableTo(Builder $query, string $donorBloodType): Builder
+    {
+        return $query->whereIn('blood_type', self::getDonatableBloodTypes($donorBloodType));
     }
 }

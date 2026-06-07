@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Helpers\ActivityLogger;
 use App\Models\Friend;
+use App\Models\Notification;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -45,6 +47,7 @@ class FriendController extends Controller
             Friend::where('user_id', $user->id)
                 ->where('friend_id', Auth::id())
                 ->update(['status' => 'accepted']);
+
             return back()->with('success', 'Friend request accepted!');
         }
 
@@ -53,6 +56,8 @@ class FriendController extends Controller
             'friend_id' => $user->id,
             'status' => 'pending',
         ]);
+
+        ActivityLogger::log('send_friend_request', "Sent friend request to {$user->email}.", 'App\Models\User', $user->id);
 
         return back()->with('success', 'Friend request sent.');
     }
@@ -66,6 +71,15 @@ class FriendController extends Controller
 
         $request->update(['status' => 'accepted']);
 
+        Notification::create([
+            'user_id' => $user->id,
+            'title' => 'Friend Request Accepted',
+            'message' => Auth::user()->name.' accepted your friend request.',
+            'type' => 'friend_accepted',
+        ]);
+
+        ActivityLogger::log('accept_friend_request', "Accepted friend request from {$user->email}.", 'App\Models\User', $user->id);
+
         return back()->with('success', 'Friend request accepted.');
     }
 
@@ -78,18 +92,34 @@ class FriendController extends Controller
 
         $request->delete();
 
+        ActivityLogger::log('decline_friend_request', "Declined friend request from {$user->email}.", 'App\Models\User', $user->id);
+
         return back()->with('success', 'Friend request declined.');
     }
 
     public function removeFriend(User $user)
     {
-        Friend::where(function ($q) {
+        Friend::where(function ($q) use ($user) {
             $q->where('user_id', Auth::id())->where('friend_id', $user->id);
         })->orWhere(function ($q) use ($user) {
             $q->where('user_id', $user->id)->where('friend_id', Auth::id());
         })->where('status', 'accepted')->delete();
 
+        ActivityLogger::log('remove_friend', "Removed friend {$user->email}.", 'App\Models\User', $user->id);
+
         return back()->with('success', 'Friend removed.');
+    }
+
+    public function cancelRequest(User $user)
+    {
+        Friend::where('user_id', Auth::id())
+            ->where('friend_id', $user->id)
+            ->where('status', 'pending')
+            ->delete();
+
+        ActivityLogger::log('cancel_friend_request', "Cancelled friend request to {$user->email}.", 'App\Models\User', $user->id);
+
+        return back()->with('success', 'Friend request cancelled.');
     }
 
     public function findPeople(Request $request)
@@ -100,7 +130,7 @@ class FriendController extends Controller
         if ($request->search) {
             $query->where(function ($q) use ($request) {
                 $q->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('email', 'like', "%{$request->search}%");
+                    ->orWhere('email', 'like', "%{$request->search}%");
             });
         }
 
@@ -111,5 +141,25 @@ class FriendController extends Controller
         $users = $query->orderBy('name')->paginate(20);
 
         return view('friends.search', compact('users'));
+    }
+
+    public function notifications()
+    {
+        $notifications = Notification::where('user_id', Auth::id())
+            ->latest()
+            ->get();
+
+        return view('friends.notifications', compact('notifications'));
+    }
+
+    public function markNotificationRead(Notification $notification)
+    {
+        if ($notification->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $notification->update(['read_status' => true]);
+
+        return back()->with('success', 'Notification marked as read.');
     }
 }

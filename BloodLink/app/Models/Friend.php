@@ -29,11 +29,10 @@ class Friend extends Model
 
     public static function areFriends(int $userId, int $otherId): bool
     {
-        return static::where('status', 'accepted')
-            ->where(function ($q) use ($userId, $otherId) {
-                $q->where('user_id', $userId)->where('friend_id', $otherId);
-            })->orWhere(function ($q) use ($userId, $otherId) {
-                $q->where('user_id', $otherId)->where('friend_id', $userId);
-            })->where('status', 'accepted')->exists();
+        return static::where(function ($q) use ($userId, $otherId) {
+            $q->where('user_id', $userId)->where('friend_id', $otherId)->where('status', 'accepted');
+        })->orWhere(function ($q) use ($userId, $otherId) {
+            $q->where('user_id', $otherId)->where('friend_id', $userId)->where('status', 'accepted');
+        })->exists();
     }
 }

@@ -14,7 +14,7 @@ class HospitalFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'name' => fake()->company() . ' Hospital',
+            'name' => fake()->company().' Hospital',
             'address' => fake()->address(),
             'phone' => fake()->phoneNumber(),
             'contact_person' => fake()->name(),

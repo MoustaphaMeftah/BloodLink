@@ -13,6 +13,8 @@
 
 @php
     $unreadCount = \App\Models\Message::where('receiver_id', Auth::id())->whereNull('read_at')->count();
+    $pendingFriendRequests = \App\Models\Friend::where('friend_id', Auth::id())->where('status', 'pending')->with('requester')->get();
+    $notificationCount = \App\Models\Notification::where('user_id', Auth::id())->where('read_status', false)->count();
     $hospitalUser = Auth::user();
     $hospital = $hospitalUser->hospital;
     $allHospitalReqs = $hospital ? \App\Models\BloodRequest::where('hospital_id', $hospital->id)->get() : collect();
@@ -144,6 +146,18 @@
                                     <span class="badge bg-danger float-end mt-1">{{ $unreadCount }} unread</span>
                                 @endif
                             </a>
+                            @if ($pendingFriendRequests->isNotEmpty())
+                            <a href="{{ route('friends') }}" class="btn btn-outline-warning py-3 text-start">
+                                <i class="fas fa-user-friends me-2"></i> Friend Requests
+                                <span class="badge bg-danger float-end mt-1">{{ $pendingFriendRequests->count() }} pending</span>
+                            </a>
+                            @endif
+                            @if ($notificationCount > 0)
+                            <a href="{{ route('friends') }}" class="btn btn-outline-warning py-3 text-start">
+                                <i class="fas fa-bell me-2"></i> Notifications
+                                <span class="badge bg-warning text-dark float-end mt-1">{{ $notificationCount }}</span>
+                            </a>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -185,10 +199,100 @@
                 </div>
             </div>
         </div>
+
+        @php
+            $recentActivity = $hospital ? \App\Models\BloodRequest::where('hospital_id', $hospital->id)->with('responses.donor.user')->latest()->take(5)->get() : collect();
+        @endphp
+        @if ($recentActivity->isNotEmpty())
+        <div class="row g-3 mt-2">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-clock me-2 text-danger"></i> Recent Requests Activity
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            @foreach ($recentActivity as $reqAct)
+                                <div class="list-group-item px-3 d-flex align-items-center gap-3">
+                                    <div style="width:32px;height:32px;border-radius:50%;background:rgba(220,53,69,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                        <i class="fas fa-tint" style="color:var(--primary);font-size:0.8rem;"></i>
+                                    </div>
+                                    <div class="flex-grow-1 min-width-0">
+                                        <div class="small">
+                                            <span class="badge bg-danger" style="font-size:0.6rem;">{{ $reqAct->blood_type }}</span>
+                                            {{ $reqAct->quantity }}ml —
+                                            <span class="badge bg-{{ $reqAct->status === 'open' ? 'success' : ($reqAct->status === 'fulfilled' ? 'primary' : 'secondary') }}" style="font-size:0.6rem;">{{ ucfirst($reqAct->status) }}</span>
+                                            ({{ $reqAct->responses->count() }} response{{ $reqAct->responses->count() !== 1 ? 's' : '' }})
+                                        </div>
+                                        <small class="text-muted">{{ $reqAct->created_at->diffForHumans() }}</small>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
     </main>
+</div>
+
+<div class="modal fade" id="locationModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title"><i class="fas fa-map-marker-alt text-danger me-2"></i>Enable Location</h5>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div style="width:72px;height:72px;border-radius:50%;background:rgba(220,53,69,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+                    <i class="fas fa-crosshairs" style="font-size:1.8rem;color:#dc3545;"></i>
+                </div>
+                <h6>Find Donors Near Your Hospital</h6>
+                <p class="small text-muted mb-0">Allow location access to find nearby available donors. Your location helps us match you with donors in your area.</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center pt-0 pb-4">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Skip</button>
+                <button type="button" class="btn btn-danger" id="enableLocationBtn" onclick="enableLocation()">
+                    <i class="fas fa-crosshairs me-1"></i> Use My Location
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 <script src="{{ asset('js/main.js') }}"></script>
+<script>
+@if ($needsLocation)
+    const locModal = new bootstrap.Modal(document.getElementById('locationModal'));
+    locModal.show();
+@endif
+
+function enableLocation() {
+    if (navigator.geolocation) {
+        document.getElementById('enableLocationBtn').disabled = true;
+        document.getElementById('enableLocationBtn').innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Locating...';
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            fetch('{{ route('hospital.location.update') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude
+                })
+            }).then(function() { location.reload(); });
+        }, function() {
+            document.getElementById('enableLocationBtn').disabled = false;
+            document.getElementById('enableLocationBtn').innerHTML = '<i class="fas fa-crosshairs me-1"></i> Use My Location';
+            alert('Could not get your location. Please enable location access in your browser settings.');
+        });
+    } else {
+        alert('Geolocation is not supported by your browser.');
+    }
+}
+</script>
 </body>
 </html>

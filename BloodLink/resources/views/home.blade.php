@@ -239,6 +239,62 @@
     </div>
 </section>
 
+<!-- Donation Tips -->
+<section style="padding:5rem 0;background:var(--bg-body);">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold" style="font-size:2rem;"><i class="fas fa-lightbulb me-2 text-danger"></i>Donation Tips</h2>
+            <p class="text-muted">Prepare yourself for a safe and comfortable donation experience</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm text-center h-100" style="border-radius:var(--radius-md);">
+                    <div class="card-body py-4">
+                        <div style="width:48px;height:48px;border-radius:50%;background:rgba(220,53,69,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+                            <i class="fas fa-bed" style="color:var(--primary);font-size:1.3rem;"></i>
+                        </div>
+                        <h6 class="fw-bold mb-2">Rest Well</h6>
+                        <p class="small text-muted mb-0">Get at least 8 hours of sleep before your donation.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm text-center h-100" style="border-radius:var(--radius-md);">
+                    <div class="card-body py-4">
+                        <div style="width:48px;height:48px;border-radius:50%;background:rgba(220,53,69,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+                            <i class="fas fa-apple-alt" style="color:var(--primary);font-size:1.3rem;"></i>
+                        </div>
+                        <h6 class="fw-bold mb-2">Eat Well</h6>
+                        <p class="small text-muted mb-0">Have a healthy meal and avoid fatty foods before donating.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm text-center h-100" style="border-radius:var(--radius-md);">
+                    <div class="card-body py-4">
+                        <div style="width:48px;height:48px;border-radius:50%;background:rgba(220,53,69,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+                            <i class="fas fa-tint" style="color:var(--primary);font-size:1.3rem;"></i>
+                        </div>
+                        <h6 class="fw-bold mb-2">Stay Hydrated</h6>
+                        <p class="small text-muted mb-0">Drink plenty of water before and after your donation.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm text-center h-100" style="border-radius:var(--radius-md);">
+                    <div class="card-body py-4">
+                        <div style="width:48px;height:48px;border-radius:50%;background:rgba(220,53,69,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+                            <i class="fas fa-id-card" style="color:var(--primary);font-size:1.3rem;"></i>
+                        </div>
+                        <h6 class="fw-bold mb-2">Bring ID</h6>
+                        <p class="small text-muted mb-0">Bring a valid ID and your blood donor card if you have one.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- CTA -->
 <section class="cta-section">
     <div class="container">

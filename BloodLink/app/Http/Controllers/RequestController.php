@@ -2,13 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\ActivityLogger;
+use App\Mail\NewMatchingRequest;
 use App\Models\BloodRequest;
+use App\Models\Donor;
+use App\Traits\BloodCompatibility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 
 class RequestController extends Controller
 {
+    use BloodCompatibility;
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -24,11 +31,11 @@ class RequestController extends Controller
 
         $hospital = Auth::user()->hospital;
 
-        if (!$hospital) {
+        if (! $hospital) {
             return back()->withErrors(['error' => 'Hospital profile not found']);
         }
 
-        BloodRequest::create([
+        $bloodRequest = BloodRequest::create([
             'hospital_id' => $hospital->id,
             'blood_type' => $request->blood_type,
             'quantity' => $request->quantity,
@@ -36,6 +43,16 @@ class RequestController extends Controller
             'location' => $request->location,
             'status' => 'open',
         ]);
+        ActivityLogger::log('create_request', "Created blood request #{$bloodRequest->id} ({$request->blood_type}, {$request->quantity}ml).", 'App\Models\BloodRequest', $bloodRequest->id);
+
+        $compatibleTypes = self::getCompatibleBloodTypes($request->blood_type);
+        $matchingDonors = Donor::whereIn('blood_type', $compatibleTypes)->with('user')->get();
+        foreach ($matchingDonors as $donor) {
+            try {
+                Mail::to($donor->user->email)->send(new NewMatchingRequest($donor->user, $bloodRequest));
+            } catch (\Exception $e) {
+            }
+        }
 
         return redirect()->route('hospital.dashboard')->with('success', 'Blood request created successfully.');
     }

@@ -15,7 +15,7 @@ class DonorSeeder extends Seeder
             'city' => 'Fes',
             'availability' => true,
             'last_donation_date' => now()->subMonths(4),
-            'medical_history' => 'Aucune maladie'
+            'medical_history' => 'Aucune maladie',
         ]);
     }
 }

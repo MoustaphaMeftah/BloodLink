@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Donor;
-use App\Models\Donation;
-use App\Traits\ApiResponse;
-use App\Services\DonationService;
 use App\Http\Requests\DonationStoreRequest;
-use Illuminate\Http\Request;
+use App\Models\Donor;
+use App\Services\DonationService;
+use App\Traits\ApiResponse;
 
 class DonationController extends Controller
 {

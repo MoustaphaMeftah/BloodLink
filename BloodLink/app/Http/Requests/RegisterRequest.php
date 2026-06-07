@@ -19,7 +19,7 @@ class RegisterRequest extends FormRequest
             'email' => 'required|email|unique:users,email',
             'phone' => 'required|string|regex:/^[0-9+\-\s()]*$/|min:10',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|in:donor,hospital,patient,admin',
+            'role' => 'required|in:donor,hospital',
             'city' => 'required|string|max:255',
             'blood_type' => 'required_if:role,donor|in:O+,O-,A+,A-,B+,B-,AB+,AB-',
         ];

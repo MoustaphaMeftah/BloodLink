@@ -29,7 +29,7 @@ class TestDataSeeder extends Seeder
         $donorUsers = [];
         foreach ($extraUsers as $u) {
             $existing = DB::table('users')->where('email', $u['email'])->first();
-            if (!$existing) {
+            if (! $existing) {
                 $id = DB::table('users')->insertGetId([
                     'name' => $u['name'],
                     'email' => $u['email'],
@@ -41,11 +41,19 @@ class TestDataSeeder extends Seeder
                     'created_at' => $now,
                     'updated_at' => $now,
                 ]);
-                if ($u['role'] === 'hospital') $hospitalUsers[] = $id;
-                if ($u['role'] === 'donor') $donorUsers[] = $id;
+                if ($u['role'] === 'hospital') {
+                    $hospitalUsers[] = $id;
+                }
+                if ($u['role'] === 'donor') {
+                    $donorUsers[] = $id;
+                }
             } else {
-                if ($existing->role === 'hospital') $hospitalUsers[] = $existing->id;
-                if ($existing->role === 'donor') $donorUsers[] = $existing->id;
+                if ($existing->role === 'hospital') {
+                    $hospitalUsers[] = $existing->id;
+                }
+                if ($existing->role === 'donor') {
+                    $donorUsers[] = $existing->id;
+                }
             }
         }
 
@@ -58,9 +66,11 @@ class TestDataSeeder extends Seeder
 
         $hospitalIds = [];
         foreach ($extraHospitals as $h) {
-            if (!$h['user_id']) continue;
+            if (! $h['user_id']) {
+                continue;
+            }
             $existing = DB::table('hospitals')->where('user_id', $h['user_id'])->first();
-            if (!$existing) {
+            if (! $existing) {
                 $hospitalIds[] = DB::table('hospitals')->insertGetId([
                     'user_id' => $h['user_id'],
                     'name' => $h['name'],
@@ -78,6 +88,7 @@ class TestDataSeeder extends Seeder
         $allHospitalIds = DB::table('hospitals')->pluck('id')->toArray();
         if (empty($allHospitalIds)) {
             $this->command->error('No hospitals found. Run base seeders first.');
+
             return;
         }
 
@@ -94,9 +105,11 @@ class TestDataSeeder extends Seeder
 
         $donorIds = [];
         foreach ($donorData as $d) {
-            if (!$d['user_id']) continue;
+            if (! $d['user_id']) {
+                continue;
+            }
             $existing = DB::table('donors')->where('user_id', $d['user_id'])->first();
-            if (!$existing) {
+            if (! $existing) {
                 $donorIds[] = DB::table('donors')->insertGetId([
                     'user_id' => $d['user_id'],
                     'blood_type' => $d['blood_type'],
@@ -143,7 +156,7 @@ class TestDataSeeder extends Seeder
         $openRequestIds = DB::table('blood_requests')->where('status', 'open')->pluck('id')->toArray();
 
         // ========== DONOR RESPONSES ==========
-        if (!empty($allDonorIds) && !empty($allRequestIds)) {
+        if (! empty($allDonorIds) && ! empty($allRequestIds)) {
             foreach ($allDonorIds as $di) {
                 $donor = DB::table('donors')->find($di);
                 $compatibleReqs = DB::table('blood_requests')
@@ -155,7 +168,7 @@ class TestDataSeeder extends Seeder
                         ->where('donor_id', $di)
                         ->where('blood_request_id', $cr->id)
                         ->exists();
-                    if (!$exists) {
+                    if (! $exists) {
                         $accepted = rand(0, 3) > 0;
                         DB::table('donor_responses')->insert([
                             'donor_id' => $di,
@@ -170,7 +183,7 @@ class TestDataSeeder extends Seeder
                             ->where('donor_id', $di)
                             ->where('blood_request_id', $cr->id)
                             ->exists();
-                        if (!$pivotExists) {
+                        if (! $pivotExists) {
                             DB::table('blood_request_donor')->insert([
                                 'blood_request_id' => $cr->id,
                                 'donor_id' => $di,
@@ -185,7 +198,7 @@ class TestDataSeeder extends Seeder
         }
 
         // ========== DONATIONS ==========
-        if (!empty($allDonorIds)) {
+        if (! empty($allDonorIds)) {
             foreach ($allDonorIds as $di) {
                 $acceptedReqs = DB::table('donor_responses')
                     ->where('donor_id', $di)
@@ -196,7 +209,7 @@ class TestDataSeeder extends Seeder
                         ->where('donor_id', $di)
                         ->where('blood_request_id', $ar->blood_request_id)
                         ->exists();
-                    if (!$exists) {
+                    if (! $exists) {
                         DB::table('donations')->insert([
                             'donor_id' => $di,
                             'blood_request_id' => $ar->blood_request_id,
@@ -221,20 +234,22 @@ class TestDataSeeder extends Seeder
 
         $conversations = [
             ['from' => $donorUserIds[0] ?? null, 'to' => $hospitalUserIds[0] ?? null,
-             'messages' => [
-                 ['content' => 'Bonjour, j\'ai accepté votre demande de sang O-. Je suis disponible cette semaine.', 'read_at' => null],
-                 ['content' => 'Merci beaucoup! Pouvez-vous venir demain à 10h?', 'read_at' => null],
-                 ['content' => 'Oui, c\'est parfait. À demain.', 'read_at' => null],
-             ]],
+                'messages' => [
+                    ['content' => 'Bonjour, j\'ai accepté votre demande de sang O-. Je suis disponible cette semaine.', 'read_at' => null],
+                    ['content' => 'Merci beaucoup! Pouvez-vous venir demain à 10h?', 'read_at' => null],
+                    ['content' => 'Oui, c\'est parfait. À demain.', 'read_at' => null],
+                ]],
             ['from' => $hospitalUserIds[0] ?? null, 'to' => $donorUserIds[1] ?? null,
-             'messages' => [
-                 ['content' => 'Bonjour, nous avons un besoin urgent de sang A+. Êtes-vous disponible?', 'read_at' => null],
-                 ['content' => 'Oui, je peux venir cet après-midi.', 'read_at' => null],
-             ]],
+                'messages' => [
+                    ['content' => 'Bonjour, nous avons un besoin urgent de sang A+. Êtes-vous disponible?', 'read_at' => null],
+                    ['content' => 'Oui, je peux venir cet après-midi.', 'read_at' => null],
+                ]],
         ];
 
         foreach ($conversations as $conv) {
-            if (!$conv['from'] || !$conv['to']) continue;
+            if (! $conv['from'] || ! $conv['to']) {
+                continue;
+            }
             foreach ($conv['messages'] as $msg) {
                 DB::table('messages')->insert([
                     'sender_id' => $conv['from'],

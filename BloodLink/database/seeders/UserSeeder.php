@@ -16,7 +16,7 @@ class UserSeeder extends Seeder
             'password' => Hash::make('password'),
             'role' => 'admin',
             'phone' => '0600000000',
-            'city' => 'Fes'
+            'city' => 'Fes',
         ]);
 
         User::create([
@@ -25,7 +25,7 @@ class UserSeeder extends Seeder
             'password' => Hash::make('password'),
             'role' => 'hospital',
             'phone' => '0611111111',
-            'city' => 'Fes'
+            'city' => 'Fes',
         ]);
 
         User::create([
@@ -34,7 +34,7 @@ class UserSeeder extends Seeder
             'password' => Hash::make('password'),
             'role' => 'donor',
             'phone' => '0622222222',
-            'city' => 'Fes'
+            'city' => 'Fes',
         ]);
     }
 }

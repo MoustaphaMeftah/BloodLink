@@ -15,8 +15,16 @@ class Hospital extends Model
         'user_id',
         'name',
         'address',
+        'latitude',
+        'longitude',
+        'city',
         'phone',
-        'contact_person'
+        'contact_person',
+    ];
+
+    protected $casts = [
+        'latitude' => 'decimal:8',
+        'longitude' => 'decimal:8',
     ];
 
     public function user(): BelongsTo

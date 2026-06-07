@@ -6,7 +6,11 @@
     <title>Request Details - BloodLink</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
     <link href="{{ asset('css/style.css') }}" rel="stylesheet">
+    <style>
+        #reqDetailMap { height: 300px; border-radius: 8px; }
+    </style>
 </head>
 <body>
 @include('partials.navbar')
@@ -93,12 +97,22 @@
             </div>
 
             <div class="col-lg-5">
+                @if ($hospital->latitude && $hospital->longitude)
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="fas fa-map-marker-alt me-2 text-danger"></i> Your Location
+                    </div>
+                    <div class="card-body p-2">
+                        <div id="reqDetailMap"></div>
+                    </div>
+                </div>
+                @endif
                 <div class="card">
                     <div class="card-header">
                         <i class="fas fa-users me-2 text-danger"></i> Responding Donors
                     </div>
                     <div class="card-body">
-                        @if ($request->donors->isEmpty())
+                        @if ($request->responses->isEmpty())
                             <div class="empty-state" style="padding:1.5rem;">
                                 <div class="empty-icon" style="font-size:2rem;"><i class="fas fa-user-friends"></i></div>
                                 <h5 style="font-size:1rem;">No Responses Yet</h5>
@@ -106,16 +120,25 @@
                             </div>
                         @else
                             <div class="list-group list-group-flush">
-                                @foreach ($request->donors as $donor)
+                                @foreach ($request->responses as $resp)
                                     <div class="list-group-item d-flex justify-content-between align-items-center px-0">
                                         <div>
-                                            <strong>{{ $donor->user->name ?? 'Unknown' }}</strong>
-                                            <span class="badge bg-danger ms-2" style="font-size:0.7rem;">{{ $donor->blood_type }}</span>
-                                            <div style="font-size:0.8rem; color:var(--text-secondary);">{{ $donor->user->city ?? '' }}</div>
+                                            <strong>{{ $resp->donor->user->name ?? 'Unknown' }}</strong>
+                                            <span class="badge bg-danger ms-2" style="font-size:0.7rem;">{{ $resp->donor->blood_type }}</span>
+                                            <div style="font-size:0.8rem; color:var(--text-secondary);">{{ $resp->donor->user->city ?? '' }}</div>
                                         </div>
-                                        <span class="badge bg-{{ $donor->pivot->status === 'accepted' ? 'success' : 'warning' }}">
-                                            {{ ucfirst($donor->pivot->status) }}
-                                        </span>
+                                        <div class="d-flex align-items-center gap-2">
+                                            @if ($resp->confirmed_at)
+                                                <span class="badge bg-primary"><i class="fas fa-check-circle me-1"></i>Confirmed</span>
+                                            @elseif ($resp->status === 'accepted')
+                                                <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#confirmModal{{ $resp->id }}">
+                                                    <i class="fas fa-check me-1"></i> Confirm
+                                                </button>
+                                                <span class="badge bg-success">{{ ucfirst($resp->status) }}</span>
+                                            @else
+                                                <span class="badge bg-warning">{{ ucfirst($resp->status) }}</span>
+                                            @endif
+                                        </div>
                                     </div>
                                 @endforeach
                             </div>
@@ -127,7 +150,66 @@
     </main>
 </div>
 
+@foreach ($request->responses as $resp)
+    @if ($resp->status === 'accepted' && !$resp->confirmed_at)
+        <div class="modal fade" id="confirmModal{{ $resp->id }}" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <form method="POST" action="{{ route('hospital.response.confirm', $resp) }}">
+                        @csrf
+                        <div class="modal-header border-0 pb-0">
+                            <h5 class="modal-title"><i class="fas fa-calendar-check text-danger me-2"></i>Schedule Donation</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body py-4">
+                            <div class="mb-3 text-center">
+                                <div style="width:64px;height:64px;border-radius:50%;background:rgba(220,53,69,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+                                    <i class="fas fa-user-check" style="font-size:1.5rem;color:#dc3545;"></i>
+                                </div>
+                                <h6>Confirm <strong>{{ $resp->donor->user->name ?? 'Donor' }}</strong></h6>
+                                <p class="small text-muted">Set the appointment date and time for this donor.</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Appointment Date & Time</label>
+                                <input type="datetime-local" name="scheduled_date" class="form-control" required min="{{ now()->addHour()->format('Y-m-d\TH:i') }}">
+                            </div>
+                            <div class="mb-0">
+                                <label class="form-label">Notes (optional)</label>
+                                <textarea name="notes" class="form-control" rows="2" placeholder="Any instructions for the donor..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 justify-content-center pt-0 pb-4">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-check-circle me-1"></i> Confirm & Schedule
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
+@endforeach
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="{{ asset('js/main.js') }}"></script>
+<script>
+    @if ($hospital->latitude && $hospital->longitude)
+    var detailMap = L.map('reqDetailMap').setView([{{ $hospital->latitude }}, {{ $hospital->longitude }}], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 18,
+    }).addTo(detailMap);
+    var hospitalIcon = L.divIcon({
+        html: '<div style="background:#dc3545;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);"><i class="fas fa-hospital"></i></div>',
+        className: '',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+    });
+    L.marker([{{ $hospital->latitude }}, {{ $hospital->longitude }}], { icon: hospitalIcon }).addTo(detailMap)
+        .bindPopup('<strong>{{ addslashes($hospital->name ?? 'Your Hospital') }}</strong>');
+    @endif
+</script>
 </body>
 </html>

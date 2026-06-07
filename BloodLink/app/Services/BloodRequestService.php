@@ -30,7 +30,7 @@ class BloodRequestService
 
         foreach ($donors as $donor) {
             $bloodRequest->donors()->attach($donor->id, [
-                'status' => 'pending'
+                'status' => 'pending',
             ]);
             $notified++;
 
@@ -52,13 +52,13 @@ class BloodRequestService
         if ($urgentToday >= 5) {
             return [
                 'can_mark' => false,
-                'reason' => 'Maximum 5 critical requests per day for this hospital'
+                'reason' => 'Maximum 5 critical requests per day for this hospital',
             ];
         }
 
         return [
             'can_mark' => true,
-            'reason' => 'Request can be marked as critical'
+            'reason' => 'Request can be marked as critical',
         ];
     }
 }

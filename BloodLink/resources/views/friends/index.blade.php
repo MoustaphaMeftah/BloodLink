@@ -96,7 +96,14 @@
                                         <div class="small text-muted">{{ $req->requested->email }}</div>
                                     </div>
                                 </div>
-                                <span class="badge bg-secondary"><i class="fas fa-clock me-1"></i> Pending</span>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <span class="badge bg-secondary"><i class="fas fa-clock me-1"></i> Pending</span>
+                                    <form method="POST" action="{{ route('friends.cancel', $req->requested) }}">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Cancel Request"><i class="fas fa-times"></i></button>
+                                    </form>
+                                </div>
                             </div>
                         @endforeach
                     </div>
@@ -115,7 +122,7 @@
                         <i class="fas fa-user-friends" style="font-size:2.5rem;opacity:0.3;margin-bottom:1rem;display:block;"></i>
                         <h5>No Friends Yet</h5>
                         <p>Find people to connect with and start messaging.</p>
-                        <a href="{{ route('admin.users') }}" class="btn btn-danger btn-sm">
+                        <a href="{{ route('friends.find') }}" class="btn btn-danger btn-sm">
                             <i class="fas fa-search me-1"></i> Find People
                         </a>
                     </div>
@@ -139,13 +146,11 @@
                                     <a href="{{ route('messages.show', $friend) }}" class="btn btn-outline-primary btn-sm">
                                         <i class="fas fa-envelope"></i> Message
                                     </a>
-                                    <form method="POST" action="{{ route('friends.remove', $friend) }}" onsubmit="return confirm('Remove this friend?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-outline-danger btn-sm">
-                                            <i class="fas fa-user-minus"></i>
-                                        </button>
-                                    </form>
+                                    <button type="button" class="btn btn-outline-danger btn-sm remove-friend-btn"
+                                        data-bs-toggle="modal" data-bs-target="#removeFriendModal"
+                                        data-friend-id="{{ $friend->id }}" data-friend-name="{{ $friend->name }}">
+                                        <i class="fas fa-user-minus"></i>
+                                    </button>
                                 </div>
                             </div>
                         @endforeach
@@ -156,7 +161,45 @@
     </main>
 </div>
 
+<!-- Remove Friend Modal -->
+<div class="modal fade" id="removeFriendModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title"><i class="fas fa-user-minus text-danger me-2"></i>Remove Friend</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div style="width:64px;height:64px;border-radius:50%;background:rgba(220,53,69,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+                    <i class="fas fa-exclamation-triangle" style="font-size:1.5rem;color:#dc3545;"></i>
+                </div>
+                <p class="mb-1 fw-bold">Remove <span id="removeFriendName" class="text-danger"></span>?</p>
+                <p class="small text-muted mb-0">They won't appear in your friends list anymore.</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center pb-4">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="" id="removeFriendForm">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger"><i class="fas fa-user-minus me-1"></i>Remove</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('removeFriendModal');
+    const baseUrl = '{{ route("friends.remove", "__ID__") }}';
+    modal.addEventListener('show.bs.modal', function (e) {
+        const btn = e.relatedTarget;
+        document.getElementById('removeFriendName').textContent = btn.dataset.friendName;
+        document.getElementById('removeFriendForm').action = baseUrl.replace('__ID__', btn.dataset.friendId);
+    });
+});
+</script>
 <script src="{{ asset('js/main.js') }}"></script>
 </body>
 </html>

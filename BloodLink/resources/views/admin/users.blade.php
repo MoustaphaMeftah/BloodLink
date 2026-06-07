@@ -6,7 +6,11 @@
     <title>Manage Users - BloodLink</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
     <link href="{{ asset('css/style.css') }}" rel="stylesheet">
+    <style>
+        #userMap { height: 400px; border-radius: 8px; }
+    </style>
 </head>
 <body>
 @include('partials.navbar')
@@ -57,7 +61,6 @@
                             <option value="donor" {{ request('role') == 'donor' ? 'selected' : '' }}>Donor</option>
                             <option value="hospital" {{ request('role') == 'hospital' ? 'selected' : '' }}>Hospital</option>
                             <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>Admin</option>
-                            <option value="patient" {{ request('role') == 'patient' ? 'selected' : '' }}>Patient</option>
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -101,7 +104,7 @@
                                     </td>
                                     <td>{{ $user->email }}</td>
                                     <td>
-                                        <span class="badge bg-{{ $user->role === 'admin' ? 'dark' : ($user->role === 'hospital' ? 'info' : ($user->role === 'patient' ? 'secondary' : 'success')) }}">
+                                        <span class="badge bg-{{ $user->role === 'admin' ? 'dark' : ($user->role === 'hospital' ? 'info' : 'success') }}">
                                             {{ ucfirst($user->role) }}
                                         </span>
                                     </td>
@@ -114,9 +117,16 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <div class="d-flex gap-1 flex-wrap">
+                                        <div class="d-flex gap-1" style="white-space:nowrap;">
                                             <button type="button" class="btn btn-outline-info btn-sm" title="View Details" data-bs-toggle="modal" data-bs-target="#viewUserModal{{ $user->id }}">
                                                 <i class="fas fa-eye"></i>
+                                            </button>
+                                            @php
+                                                $_hasLoc = ($user->role === 'donor' && $user->donor && $user->donor->latitude && $user->donor->longitude) ||
+                                                           ($user->role === 'hospital' && $user->hospital && $user->hospital->latitude && $user->hospital->longitude);
+                                            @endphp
+                                            <button type="button" class="btn btn-outline-success btn-sm" title="{{ $_hasLoc ? 'View on Map' : 'No location set' }}" onclick="{{ $_hasLoc ? "showUserMap({$user->id})" : "showNoLocationModal()" }}">
+                                                <i class="fas fa-map-marker-alt"></i>
                                             </button>
                                             @if (!$user->email_verified_at)
                                                 <form method="POST" action="{{ route('admin.user.approve', $user) }}" class="d-inline">
@@ -162,6 +172,11 @@
             @php
                 $donorProfile = $user->role === 'donor' ? $user->donor : null;
                 $hospitalProfile = $user->role === 'hospital' ? $user->hospital : null;
+                $userLat = $donorProfile?->latitude ?? $hospitalProfile?->latitude ?? null;
+                $userLng = $donorProfile?->longitude ?? $hospitalProfile?->longitude ?? null;
+                $userMarkerLabel = $donorProfile ? $user->name : ($hospitalProfile?->name ?? $user->name);
+                $userMarkerIcon = $donorProfile ? 'fa-user' : 'fa-hospital';
+                $userMarkerColor = $donorProfile ? '#198754' : '#dc3545';
             @endphp
             <div class="modal fade" id="viewUserModal{{ $user->id }}" tabindex="-1">
                 <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -249,7 +264,6 @@
                                         <option value="donor" {{ old('role', $user->role) === 'donor' ? 'selected' : '' }}>Donor</option>
                                         <option value="hospital" {{ old('role', $user->role) === 'hospital' ? 'selected' : '' }}>Hospital</option>
                                         <option value="admin" {{ old('role', $user->role) === 'admin' ? 'selected' : '' }}>Admin</option>
-                                        <option value="patient" {{ old('role', $user->role) === 'patient' ? 'selected' : '' }}>Patient</option>
                                     </select>
                                     @error('role') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
@@ -286,11 +300,100 @@
                 </div>
             </div>
             @endif
+
+            @if ($userLat && $userLng)
+            <div class="modal fade" id="userMapModal{{ $user->id }}" tabindex="-1">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title"><i class="fas fa-map-marker-alt text-danger me-2"></i>{{ $userMarkerLabel }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body p-2">
+                            <div id="userMap{{ $user->id }}" style="height:400px;border-radius:8px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
         @endforeach
     </main>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="{{ asset('js/main.js') }}"></script>
+<script>
+    var userMapInstances = {};
+
+    function showUserMap(userId) {
+        var modal = new bootstrap.Modal(document.getElementById('userMapModal' + userId));
+        modal.show();
+
+        setTimeout(function() {
+            if (userMapInstances[userId]) {
+                userMapInstances[userId].remove();
+                delete userMapInstances[userId];
+            }
+
+            var el = document.getElementById('userMap' + userId);
+            if (!el) return;
+
+            @foreach ($users as $user)
+                @php
+                    $donorP = $user->role === 'donor' ? $user->donor : null;
+                    $hospitalP = $user->role === 'hospital' ? $user->hospital : null;
+                    $uLat = $donorP?->latitude ?? $hospitalP?->latitude ?? null;
+                    $uLng = $donorP?->longitude ?? $hospitalP?->longitude ?? null;
+                    $uLabel = $donorP ? $user->name : ($hospitalP?->name ?? $user->name);
+                    $uIcon = $donorP ? 'fa-user' : 'fa-hospital';
+                    $uColor = $donorP ? '#198754' : '#dc3545';
+                @endphp
+                @if ($uLat && $uLng)
+                    if (userId === {{ $user->id }}) {
+                        var map = L.map('userMap' + userId).setView([{{ $uLat }}, {{ $uLng }}], 14);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '&copy; OpenStreetMap contributors',
+                            maxZoom: 18,
+                        }).addTo(map);
+                        var icon = L.divIcon({
+                            html: '<div style="background:{{ $uColor }};color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);"><i class="fas {{ $uIcon }}"></i></div>',
+                            className: '',
+                            iconSize: [32, 32],
+                            iconAnchor: [16, 16],
+                        });
+                        L.marker([{{ $uLat }}, {{ $uLng }}], { icon: icon }).addTo(map)
+                            .bindPopup('<strong>{{ addslashes($uLabel) }}</strong>')
+                            .openPopup();
+                        userMapInstances[userId] = map;
+                    }
+                @endif
+            @endforeach
+        }, 300);
+    }
+</script>
+
+<div class="modal fade" id="noLocationModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div style="width:64px;height:64px;border-radius:50%;background:rgba(255,193,7,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+                    <i class="fas fa-map-pin" style="font-size:1.8rem;color:#ffc107;"></i>
+                </div>
+                <h6 class="fw-bold mb-2">No Location Set</h6>
+                <p class="text-muted small mb-0">This user hasn't set their location yet.</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center pt-0 pb-4">
+                <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showNoLocationModal() {
+        new bootstrap.Modal(document.getElementById('noLocationModal')).show();
+    }
+</script>
 </body>
 </html>

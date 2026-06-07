@@ -14,7 +14,7 @@ class HospitalSeeder extends Seeder
             'name' => 'CHU Hassan II',
             'address' => 'Route Sidi Harazem, Fes',
             'phone' => '0535000000',
-            'contact_person' => 'Dr Ahmed'
+            'contact_person' => 'Dr Ahmed',
         ]);
     }
 }

@@ -2,33 +2,33 @@
 
 namespace App\Services;
 
-use App\Models\Donor;
 use App\Models\Donation;
-use Illuminate\Http\JsonResponse;
+use App\Models\Donor;
 
 class DonationService
 {
     public function canDonate(Donor $donor): array
     {
-        if (!$donor->isDonationEligible()) {
+        if (! $donor->isDonationEligible()) {
             $daysUntilEligible = $donor->getDaysUntilEligible();
+
             return [
                 'eligible' => false,
                 'reason' => "Donor must wait {$daysUntilEligible} more days before donation",
-                'days_until_eligible' => $daysUntilEligible
+                'days_until_eligible' => $daysUntilEligible,
             ];
         }
 
-        if (!$donor->availability) {
+        if (! $donor->availability) {
             return [
                 'eligible' => false,
-                'reason' => 'Donor is not available for donation'
+                'reason' => 'Donor is not available for donation',
             ];
         }
 
         return [
             'eligible' => true,
-            'reason' => 'Donor is eligible for donation'
+            'reason' => 'Donor is eligible for donation',
         ];
     }
 
@@ -37,14 +37,14 @@ class DonationService
         $donor = Donor::findOrFail($data['donor_id']);
 
         $eligibility = $this->canDonate($donor);
-        if (!$eligibility['eligible']) {
+        if (! $eligibility['eligible']) {
             throw new \Exception($eligibility['reason']);
         }
 
         $donation = Donation::create($data);
 
         $donor->update([
-            'last_donation_date' => $data['donation_date']
+            'last_donation_date' => $data['donation_date'],
         ]);
 
         return $donation;

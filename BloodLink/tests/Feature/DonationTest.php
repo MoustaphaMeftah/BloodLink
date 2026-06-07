@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
-use App\Models\Donor;
-use App\Models\Donation;
 use App\Models\BloodRequest;
+use App\Models\Donation;
+use App\Models\Donor;
 use App\Models\Hospital;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,9 +15,13 @@ class DonationTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Donor $donor;
+
     private Hospital $hospital;
+
     private BloodRequest $bloodRequest;
+
     private string $token;
 
     protected function setUp(): void
@@ -49,7 +53,7 @@ class DonationTest extends TestCase
 
     protected function headers(): array
     {
-        return ['Authorization' => 'Bearer ' . $this->token];
+        return ['Authorization' => 'Bearer '.$this->token];
     }
 
     public function test_record_donation()

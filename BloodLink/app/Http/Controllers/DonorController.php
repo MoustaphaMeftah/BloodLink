@@ -2,24 +2,31 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Donor;
+use App\Helpers\ActivityLogger;
+use App\Helpers\LocationService;
+use App\Mail\DonorResponded;
 use App\Models\BloodRequest;
+use App\Models\Donor;
 use App\Models\DonorResponse;
 use App\Traits\ApiResponse;
+use App\Traits\BloodCompatibility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 
 class DonorController extends Controller
 {
-    use ApiResponse;
+    use ApiResponse, BloodCompatibility;
 
     // ==================== WEB METHODS ====================
 
     public function dashboard()
     {
         $donor = Auth::user()->donor;
-        return view('donor.dashboard', compact('donor'));
+        $needsLocation = ! $donor->latitude || ! $donor->longitude;
+
+        return view('donor.dashboard', compact('donor', 'needsLocation'));
     }
 
     public function getPendingWebRequests()
@@ -27,8 +34,13 @@ class DonorController extends Controller
         $donor = Auth::user()->donor;
         $bloodType = $donor->blood_type;
 
+        $respondedIds = DonorResponse::where('donor_id', $donor->id)->pluck('blood_request_id');
+
+        $compatibleTypes = self::getDonatableBloodTypes($bloodType);
+
         $requests = BloodRequest::where('status', 'open')
-            ->where('blood_type', $bloodType)
+            ->whereIn('blood_type', $compatibleTypes)
+            ->whereNotIn('id', $respondedIds)
             ->with('hospital')
             ->orderByDesc('created_at')
             ->paginate(10);
@@ -50,18 +62,28 @@ class DonorController extends Controller
             $donor = Auth::user()->donor;
             $bloodRequest = BloodRequest::findOrFail($requestId);
 
-            $bloodRequest->donors()->attach($donor->id, [
-                'status' => $request->accepted ? 'accepted' : 'rejected',
-            ]);
+            $status = $request->accepted ? 'accepted' : 'rejected';
 
-            DonorResponse::create([
+            $response = DonorResponse::create([
                 'donor_id' => $donor->id,
                 'blood_request_id' => $bloodRequest->id,
-                'status' => $request->accepted ? 'accepted' : 'rejected',
+                'status' => $status,
                 'response_date' => now(),
             ]);
 
-            return back()->with('success', $request->accepted ? 'Donation accepted' : 'Request declined');
+            ActivityLogger::log('respond_request', ($request->accepted ? 'Accepted' : 'Declined')." blood request #{$bloodRequest->id}.", 'App\Models\BloodRequest', $bloodRequest->id);
+
+            try {
+                $hospitalUser = $bloodRequest->hospital?->user;
+                if ($hospitalUser) {
+                    Mail::to($hospitalUser->email)->send(new DonorResponded($hospitalUser, $response));
+                }
+            } catch (\Exception $e) {
+            }
+
+            $redirect = $request->input('redirect_to', url()->previous());
+
+            return redirect($redirect)->with('success', $request->accepted ? 'Donation accepted' : 'Request declined');
         } catch (\Exception $e) {
             return back()->withErrors(['error' => $e->getMessage()]);
         }
@@ -78,6 +100,73 @@ class DonorController extends Controller
         return view('donor.history', compact('donations'));
     }
 
+    public function showNearbyRequests()
+    {
+        $realDonor = Auth::user()->donor;
+
+        if (!$realDonor) {
+            $respondedIds = collect();
+            $compatibleTypes = ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'];
+            $donor = (object) ['latitude' => null, 'longitude' => null, 'blood_type' => null];
+        } else {
+            $respondedIds = DonorResponse::where('donor_id', $realDonor->id)->pluck('blood_request_id');
+            $compatibleTypes = self::getDonatableBloodTypes($realDonor->blood_type);
+            $donor = $realDonor;
+        }
+
+        $requests = BloodRequest::with('hospital')
+            ->where('status', 'open')
+            ->whereIn('blood_type', $compatibleTypes)
+            ->whereNotIn('id', $respondedIds)
+            ->get();
+
+        $nearbyRequests = [];
+        $allOnMap = [];
+
+        if ($donor->latitude && $donor->longitude) {
+            foreach ($requests as $req) {
+                if ($req->hospital && $req->hospital->latitude && $req->hospital->longitude) {
+                    $distance = LocationService::haversineDistance(
+                        $donor->latitude, $donor->longitude,
+                        $req->hospital->latitude, $req->hospital->longitude
+                    );
+                    $req->distance = round($distance, 1);
+                    $allOnMap[] = $req;
+                    if ($distance <= 25) {
+                        $nearbyRequests[] = $req;
+                    }
+                }
+            }
+            usort($nearbyRequests, fn ($a, $b) => $a->distance <=> $b->distance);
+            usort($allOnMap, fn ($a, $b) => $a->distance <=> $b->distance);
+        }
+
+        return view('donor.nearby-requests', compact('donor', 'nearbyRequests', 'allOnMap', 'requests'));
+    }
+
+    public function updateLocation(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator);
+        }
+
+        $donor = Auth::user()->donor;
+        if (!$donor) {
+            return back()->with('error', 'Only donors can update their location here.');
+        }
+
+        $donor->update($request->only(['latitude', 'longitude']));
+
+        ActivityLogger::log('update_location', 'Updated donor location.', 'App\Models\Donor', $donor->id);
+
+        return back()->with('success', 'Location updated successfully.');
+    }
+
     // ==================== API METHODS ====================
 
     public function index(Request $request)
@@ -90,7 +179,7 @@ class DonorController extends Controller
             }
 
             if ($request->city) {
-                $query->where('city', 'like', '%' . $request->city . '%');
+                $query->where('city', 'like', '%'.$request->city.'%');
             }
 
             if ($request->availability !== null) {
@@ -109,6 +198,7 @@ class DonorController extends Controller
     {
         try {
             $donor = Donor::with('user', 'donations', 'bloodRequests')->findOrFail($id);
+
             return $this->successResponse($donor, 'Donor retrieved successfully');
         } catch (\Exception $e) {
             return $this->notFoundResponse('Donor not found');
@@ -134,7 +224,7 @@ class DonorController extends Controller
             }
 
             $donor->update($request->only([
-                'blood_type', 'city', 'availability', 'medical_history', 'latitude', 'longitude'
+                'blood_type', 'city', 'availability', 'medical_history', 'latitude', 'longitude',
             ]));
 
             return $this->successResponse($donor, 'Donor profile updated successfully');
@@ -156,6 +246,7 @@ class DonorController extends Controller
         try {
             $donor = Donor::findOrFail($id);
             $donor->update(['availability' => $request->availability]);
+
             return $this->successResponse($donor, 'Availability updated');
         } catch (\Exception $e) {
             return $this->errorResponse($e->getMessage(), 500);
@@ -172,7 +263,7 @@ class DonorController extends Controller
             }
 
             if ($request->city) {
-                $query->where('city', 'like', '%' . $request->city . '%');
+                $query->where('city', 'like', '%'.$request->city.'%');
             }
 
             if ($request->availability !== null) {
@@ -191,9 +282,11 @@ class DonorController extends Controller
                         return false;
                     }
                     $donor->distance = $this->haversineDistance($lat, $lon, $donor->latitude, $donor->longitude);
+
                     return $donor->distance < $maxDistance;
                 })->sortBy('distance')->values();
             }
+
             return $this->successResponse($donors, 'Search results');
         } catch (\Exception $e) {
             return $this->errorResponse($e->getMessage(), 500);
@@ -225,6 +318,7 @@ class DonorController extends Controller
                         return false;
                     }
                     $donor->distance = $this->haversineDistance($lat, $lon, $donor->latitude, $donor->longitude);
+
                     return $donor->distance < $distance;
                 })
                 ->sortBy('distance')
@@ -245,6 +339,7 @@ class DonorController extends Controller
             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
             sin($dLon / 2) * sin($dLon / 2);
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
         return $earthRadius * $c;
     }
 
@@ -269,8 +364,13 @@ class DonorController extends Controller
             $donor = Donor::findOrFail($donorId);
             $bloodType = $donor->blood_type;
 
+            $respondedIds = DonorResponse::where('donor_id', $donor->id)->pluck('blood_request_id');
+
+            $compatibleTypes = self::getDonatableBloodTypes($bloodType);
+
             $requests = BloodRequest::where('status', 'open')
-                ->where('blood_type', $bloodType)
+                ->whereIn('blood_type', $compatibleTypes)
+                ->whereNotIn('id', $respondedIds)
                 ->with('hospital')
                 ->orderByDesc('created_at')
                 ->limit(10)
@@ -296,10 +396,6 @@ class DonorController extends Controller
             $donor = Donor::findOrFail($donorId);
             $bloodRequest = BloodRequest::findOrFail($requestId);
 
-            $bloodRequest->donors()->attach($donorId, [
-                'status' => $request->status,
-            ]);
-
             DonorResponse::create([
                 'donor_id' => $donor->id,
                 'blood_request_id' => $bloodRequest->id,
@@ -318,6 +414,7 @@ class DonorController extends Controller
         try {
             $donor = Donor::findOrFail($id);
             $donor->delete();
+
             return $this->successResponse(null, 'Donor deleted successfully');
         } catch (\Exception $e) {
             return $this->errorResponse($e->getMessage(), 500);

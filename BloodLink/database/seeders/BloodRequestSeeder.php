@@ -15,7 +15,7 @@ class BloodRequestSeeder extends Seeder
             'quantity' => 5,
             'urgency' => 'high',
             'location' => 'Fes',
-            'status' => 'open'
+            'status' => 'open',
         ]);
     }
 }

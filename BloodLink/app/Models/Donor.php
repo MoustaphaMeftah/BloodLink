@@ -2,16 +2,16 @@
 
 namespace App\Models;
 
+use App\Traits\BloodCompatibility;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use App\Traits\BloodCompatibility;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Donor extends Model
 {
-    use HasFactory, BloodCompatibility;
+    use BloodCompatibility, HasFactory;
 
     protected $fillable = [
         'user_id',
@@ -22,7 +22,7 @@ class Donor extends Model
         'availability',
         'contact_verified',
         'last_donation_date',
-        'medical_history'
+        'medical_history',
     ];
 
     protected $casts = [
@@ -57,20 +57,21 @@ class Donor extends Model
 
     public function isDonationEligible(): bool
     {
-        if (!$this->last_donation_date) {
+        if (! $this->last_donation_date) {
             return true;
         }
-        
+
         return $this->last_donation_date->diffInDays(now()) >= 56;
     }
 
     public function getDaysUntilEligible(): int
     {
-        if (!$this->last_donation_date) {
+        if (! $this->last_donation_date) {
             return 0;
         }
 
         $daysSinceLastDonation = $this->last_donation_date->diffInDays(now());
+
         return max(0, 56 - $daysSinceLastDonation);
     }
 }

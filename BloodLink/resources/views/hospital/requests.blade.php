@@ -6,10 +6,16 @@
     <title>Manage Requests - BloodLink</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
     <link href="{{ asset('css/style.css') }}" rel="stylesheet">
+    <style>
+        #requestMap { height: 400px; border-radius: 8px; }
+    </style>
 </head>
 <body>
 @include('partials.navbar')
+
+@php $hospital = Auth::user()->hospital; @endphp
 
 <div class="dashboard-wrapper">
     <div class="dashboard-sidebar-overlay" id="sidebarOverlay"></div>
@@ -92,9 +98,16 @@
                                         </td>
                                         <td>{{ $req->created_at->format('Y-m-d') }}</td>
                                         <td>
+                                            <div class="d-flex gap-1">
                                             <a href="{{ route('hospital.request.show', $req) }}" class="btn btn-outline-danger btn-sm">
                                                 <i class="fas fa-eye me-1"></i> View
                                             </a>
+                                            @if ($hospital->latitude && $hospital->longitude)
+                                            <button type="button" class="btn btn-outline-info btn-sm" onclick="showRequestMap({{ $hospital->latitude }}, {{ $hospital->longitude }}, '{{ $hospital->name }}')" title="View on Map">
+                                                <i class="fas fa-map-marker-alt"></i>
+                                            </button>
+                                            @endif
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -112,7 +125,55 @@
     </main>
 </div>
 
+<div class="modal fade" id="requestMapModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-map-marker-alt text-danger me-2"></i>Request Location</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-2">
+                <div id="requestMap"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="{{ asset('js/main.js') }}"></script>
+<script>
+    var requestMapInstance = null;
+
+    function showRequestMap(lat, lng, name) {
+        var modal = new bootstrap.Modal(document.getElementById('requestMapModal'));
+        modal.show();
+
+        setTimeout(function() {
+            if (requestMapInstance) {
+                requestMapInstance.remove();
+                requestMapInstance = null;
+            }
+
+            requestMapInstance = L.map('requestMap').setView([lat, lng], 14);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors',
+                maxZoom: 18,
+            }).addTo(requestMapInstance);
+
+            var icon = L.divIcon({
+                html: '<div style="background:#dc3545;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);"><i class="fas fa-hospital"></i></div>',
+                className: '',
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+            });
+
+            L.marker([lat, lng], { icon: icon }).addTo(requestMapInstance)
+                .bindPopup('<strong>' + name + '</strong>')
+                .openPopup();
+        }, 300);
+    }
+</script>
 </body>
 </html>

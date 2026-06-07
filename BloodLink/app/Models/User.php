@@ -3,16 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use \Illuminate\Auth\MustVerifyEmail, HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, \Illuminate\Auth\MustVerifyEmail, Notifiable;
 
     protected $fillable = [
         'name',
@@ -79,8 +79,9 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $sent = $this->sentFriendRequests()->where('status', 'accepted')->with('requested');
         $received = $this->receivedFriendRequests()->where('status', 'accepted')->with('requester');
-        return $sent->get()->map(fn($f) => $f->requested)
-            ->merge($received->get()->map(fn($f) => $f->requester))
+
+        return $sent->get()->map(fn ($f) => $f->requested)
+            ->merge($received->get()->map(fn ($f) => $f->requester))
             ->unique('id')
             ->values();
     }

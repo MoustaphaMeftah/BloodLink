@@ -32,6 +32,11 @@
                     </li>
                 @endguest
                 @auth
+                    <li class="nav-item me-2">
+                        <button class="btn btn-sm btn-outline-secondary rounded-circle p-2" id="darkModeToggle" title="Toggle Dark Mode" style="width:36px;height:36px;">
+                            <i class="fas fa-moon"></i>
+                        </button>
+                    </li>
                     <li class="nav-item dropdown user-dropdown">
                         <a class="dropdown-toggle text-decoration-none" href="#" role="button" data-bs-toggle="dropdown">
                             <span class="user-avatar">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</span>
@@ -54,7 +59,10 @@
                             @endif
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ route('profile') }}"><i class="fas fa-user-cog"></i> Profile</a></li>
-                            <li><a class="dropdown-item" href="{{ route('friends') }}"><i class="fas fa-user-friends"></i> Friends</a></li>
+                            @if (Auth::user()->role !== 'admin')
+                            @php $pendingFriendCount = \App\Models\Friend::where('friend_id', Auth::id())->where('status', 'pending')->count(); @endphp
+                            <li><a class="dropdown-item d-flex align-items-center justify-content-between" href="{{ route('friends') }}"><span><i class="fas fa-user-friends"></i> Friends</span>@if ($pendingFriendCount > 0)<span class="badge bg-danger rounded-pill">{{ $pendingFriendCount }}</span>@endif</a></li>
+                            @endif
                             <li>
                                 <a class="dropdown-item d-flex align-items-center justify-content-between" href="{{ route('messages') }}">
                                     <span><i class="fas fa-envelope"></i> Messages</span>

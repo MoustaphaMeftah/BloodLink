@@ -198,6 +198,29 @@
                 </div>
             </div>
         </div>
+
+        <div class="row g-3 mt-2">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-download me-2 text-danger"></i> Export Data
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a href="{{ route('admin.export', ['type' => 'users']) }}" class="btn btn-outline-danger btn-sm">
+                                <i class="fas fa-users me-1"></i> Export Users (CSV)
+                            </a>
+                            <a href="{{ route('admin.export', ['type' => 'donations']) }}" class="btn btn-outline-danger btn-sm">
+                                <i class="fas fa-heart me-1"></i> Export Donations (CSV)
+                            </a>
+                            <a href="{{ route('admin.export', ['type' => 'requests']) }}" class="btn btn-outline-danger btn-sm">
+                                <i class="fas fa-tint me-1"></i> Export Requests (CSV)
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
 </div>
 

@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Models\BloodRequest;
 use App\Models\Donation;
 use App\Models\Donor;
-use App\Models\BloodRequest;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class DonationFactory extends Factory

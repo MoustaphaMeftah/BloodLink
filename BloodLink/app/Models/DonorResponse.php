@@ -15,11 +15,13 @@ class DonorResponse extends Model
         'blood_request_id',
         'status',
         'response_date',
-        'notes'
+        'confirmed_at',
+        'notes',
     ];
 
     protected $casts = [
         'response_date' => 'datetime',
+        'confirmed_at' => 'datetime',
     ];
 
     public function donor(): BelongsTo

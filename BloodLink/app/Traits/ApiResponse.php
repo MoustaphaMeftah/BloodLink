@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\MessageBag;
 
 trait ApiResponse
 {
@@ -44,7 +45,7 @@ trait ApiResponse
         return $this->errorResponse($message, 403);
     }
 
-    protected function validationErrorResponse(array|\Illuminate\Support\MessageBag $errors): JsonResponse
+    protected function validationErrorResponse(array|MessageBag $errors): JsonResponse
     {
         return response()->json([
             'success' => false,

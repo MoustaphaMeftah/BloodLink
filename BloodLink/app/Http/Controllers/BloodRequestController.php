@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\BloodRequest;
 use App\Models\Donor;
 use App\Traits\ApiResponse;
-use App\Services\BloodRequestService;
 use App\Traits\BloodCompatibility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -99,7 +98,7 @@ class BloodRequestController extends Controller
             $bloodRequest = BloodRequest::findOrFail($id);
 
             $bloodRequest->update($request->only([
-                'blood_type', 'quantity', 'location', 'urgency', 'status'
+                'blood_type', 'quantity', 'location', 'urgency', 'status',
             ]));
 
             return $this->successResponse($bloodRequest, 'Request updated successfully');
@@ -113,6 +112,7 @@ class BloodRequestController extends Controller
         try {
             $request = BloodRequest::findOrFail($id);
             $request->delete();
+
             return $this->successResponse(null, 'Request deleted successfully');
         } catch (\Exception $e) {
             return $this->errorResponse($e->getMessage(), 500);

@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Message extends Model
@@ -14,7 +14,7 @@ class Message extends Model
         'sender_id',
         'receiver_id',
         'content',
-        'read_at'
+        'read_at',
     ];
 
     protected $casts = [

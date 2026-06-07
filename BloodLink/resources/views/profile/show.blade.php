@@ -92,6 +92,39 @@
                                 <label for="role" class="form-label">Role</label>
                                 <input type="text" id="role" class="form-control" value="{{ ucfirst($user->role) }}" disabled>
                             </div>
+
+                            @if ($user->role === 'donor' && $user->donor)
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="latitude" class="form-label">Latitude</label>
+                                        <input type="number" step="any" name="latitude" id="latitude" class="form-control" value="{{ old('latitude', $user->donor->latitude) }}" placeholder="e.g. 33.5731">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="longitude" class="form-label">Longitude</label>
+                                        <input type="number" step="any" name="longitude" id="longitude" class="form-control" value="{{ old('longitude', $user->donor->longitude) }}" placeholder="e.g. -7.5898">
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary mb-3" onclick="getLocation()">
+                                    <i class="fas fa-crosshairs me-1"></i> Use My Location
+                                </button>
+                            @endif
+
+                            @if ($user->role === 'hospital' && $user->hospital)
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="latitude" class="form-label">Latitude</label>
+                                        <input type="number" step="any" name="latitude" id="latitude" class="form-control" value="{{ old('latitude', $user->hospital->latitude) }}" placeholder="e.g. 33.5731">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="longitude" class="form-label">Longitude</label>
+                                        <input type="number" step="any" name="longitude" id="longitude" class="form-control" value="{{ old('longitude', $user->hospital->longitude) }}" placeholder="e.g. -7.5898">
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary mb-3" onclick="getLocation()">
+                                    <i class="fas fa-crosshairs me-1"></i> Use My Location
+                                </button>
+                            @endif
+
                             <button type="submit" class="btn btn-danger">
                                 <i class="fas fa-save me-1"></i> Update Profile
                             </button>
@@ -102,6 +135,19 @@
         </div>
     </main>
 </div>
+
+<script>
+function getLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            document.getElementById('latitude').value = pos.coords.latitude;
+            document.getElementById('longitude').value = pos.coords.longitude;
+        });
+    } else {
+        alert('Geolocation is not supported by your browser.');
+    }
+}
+</script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 <script src="{{ asset('js/main.js') }}"></script>

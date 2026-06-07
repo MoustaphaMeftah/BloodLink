@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use App\Models\Donor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
@@ -136,7 +135,7 @@ class AuthTest extends TestCase
         $user = User::factory()->create(['email_verified_at' => now()]);
         $token = $user->createToken('test')->plainTextToken;
 
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $token])
+        $response = $this->withHeaders(['Authorization' => 'Bearer '.$token])
             ->postJson('/api/logout');
 
         $response->assertStatus(200)
@@ -197,7 +196,7 @@ class AuthTest extends TestCase
         $user = User::factory()->create(['email_verified_at' => now()]);
         $token = $user->createToken('test')->plainTextToken;
 
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $token])
+        $response = $this->withHeaders(['Authorization' => 'Bearer '.$token])
             ->getJson('/api/user');
 
         $response->assertStatus(200)
