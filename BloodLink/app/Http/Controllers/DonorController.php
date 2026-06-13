@@ -24,7 +24,7 @@ class DonorController extends Controller
     public function dashboard()
     {
         $donor = Auth::user()->donor;
-        $needsLocation = ! $donor->latitude || ! $donor->longitude;
+        $needsLocation = session()->get('show_location', false) || ! $donor->latitude || ! $donor->longitude;
 
         return view('donor.dashboard', compact('donor', 'needsLocation'));
     }

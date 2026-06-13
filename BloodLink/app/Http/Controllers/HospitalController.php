@@ -26,7 +26,7 @@ class HospitalController extends Controller
 
         $inventory = Inventory::where('hospital_id', $hospital->id)->get()->keyBy('blood_type');
         $allBloodTypes = ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'];
-        $needsLocation = ! $hospital->latitude || ! $hospital->longitude;
+        $needsLocation = session()->get('show_location', false) || ! $hospital->latitude || ! $hospital->longitude;
 
         return view('hospital.dashboard', compact('hospital', 'inventory', 'allBloodTypes', 'needsLocation'));
     }

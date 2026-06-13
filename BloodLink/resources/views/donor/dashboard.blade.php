@@ -38,7 +38,6 @@
         @php
             $unreadCount = \App\Models\Message::where('receiver_id', Auth::id())->whereNull('read_at')->count();
             $pendingFriendRequests = \App\Models\Friend::where('friend_id', Auth::id())->where('status', 'pending')->with('requester')->get();
-            $notificationCount = \App\Models\Notification::where('user_id', Auth::id())->where('read_status', false)->count();
             $donationsCount = $donor ? $donor->donations()->count() : 0;
             $totalMl = $donor ? $donor->donations()->sum('quantity') : 0;
             $livesSaved = $donationsCount * 3;
@@ -166,12 +165,6 @@
                             <a href="{{ route('friends') }}" class="btn btn-outline-warning py-3 text-start">
                                 <i class="fas fa-user-friends me-2"></i> Friend Requests
                                 <span class="badge bg-danger float-end mt-1">{{ $pendingFriendRequests->count() }} pending</span>
-                            </a>
-                            @endif
-                            @if ($notificationCount > 0)
-                            <a href="{{ route('friends') }}" class="btn btn-outline-warning py-3 text-start">
-                                <i class="fas fa-bell me-2"></i> Notifications
-                                <span class="badge bg-warning text-dark float-end mt-1">{{ $notificationCount }}</span>
                             </a>
                             @endif
                         </div>

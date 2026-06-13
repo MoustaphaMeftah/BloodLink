@@ -19,6 +19,8 @@
     <div class="dashboard-sidebar-overlay" id="sidebarOverlay"></div>
     @include('partials.sidebar')
 
+    @php $hospital = Auth::user()->hospital; @endphp
+
     <main class="dashboard-content">
         <div class="page-header">
             <div>

@@ -90,6 +90,7 @@ class AuthController extends Controller
             Auth::login($user, $request->boolean('remember'));
             $request->session()->regenerate();
             ActivityLogger::log('login', "User {$user->email} logged in.");
+            session()->flash('show_location', true);
 
             return redirect($this->dashboardUrl($user));
         } catch (\Exception $e) {
@@ -172,10 +173,9 @@ class AuthController extends Controller
                 ], 201);
             }
 
-            Auth::login($user);
             ActivityLogger::log('register', "User {$user->email} registered as {$user->role}.");
 
-            return redirect($this->dashboardUrl($user))->with('success', 'Registration successful.');
+            return redirect()->route('login')->with('success', 'Registration successful! Please check your email to verify your account before logging in.');
         } catch (\Exception $e) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -309,6 +309,7 @@ class AuthController extends Controller
             }
             Auth::login($user);
             ActivityLogger::log('verify_email', "User {$user->email} verified email.");
+            session()->flash('show_location', true);
 
             return redirect($this->dashboardUrl($user))->with('success', 'Email verified successfully. Welcome!');
         } catch (\Exception $e) {
