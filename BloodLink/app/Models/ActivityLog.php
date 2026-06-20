@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ActivityLog extends Model
 {
-    use HasFactory;
+    use HasFactory ;
 
     protected $fillable = [
         'user_id', 'action', 'description', 'model_type', 'model_id', 'ip_address', 'user_agent',
